@@ -1,0 +1,1569 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#262A28">
+<title>Esquadro</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --papel:#EDF0EA; --grade:#DCE3DA; --grafite:#262A28; --grafite2:#5B635E;
+  --trena:#F4C20D; --trena2:#C99A00; --vermelho:#C4372C; --azul:#2F5E8C;
+  --branco:#FBFCFA; --linha:#C9D2C7; --ok:#3E7A4F;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--papel);color:var(--grafite);font-family:Archivo,system-ui,sans-serif;font-size:16px;-webkit-tap-highlight-color:transparent}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+h1,h2,h3{margin:0;line-height:1.15}
+.num{font-stretch:75%;font-variant-numeric:tabular-nums}
+.muted{color:var(--grafite2)}
+.btn{min-height:48px;padding:0 18px;border-radius:10px;border:1.5px solid var(--grafite);background:var(--branco);font-weight:600;display:inline-flex;align-items:center;justify-content:center;gap:8px;text-decoration:none}
+.btn.pri{background:var(--grafite);color:var(--branco)}
+.btn.am{background:var(--trena)}
+.btn.perigo{border-color:var(--vermelho);color:var(--vermelho);background:transparent}
+.btn.lite{border-color:var(--linha)}
+.btn.sm{min-height:40px;padding:0 12px;font-size:15px}
+.btn:disabled{opacity:.4}
+:focus-visible{outline:3px solid var(--azul);outline-offset:2px}
+label.f{display:block;margin:0 0 14px}
+label.f>span{display:block;font-size:14px;color:var(--grafite2);margin-bottom:4px}
+label.f small,.hint{display:block;font-size:13px;color:var(--grafite2);margin-top:4px;line-height:1.35}
+.i{width:100%;min-height:48px;border:1.5px solid var(--linha);border-radius:8px;background:#fff;padding:8px 12px;font-size:18px}
+.i:focus{border-color:var(--grafite);outline:none;box-shadow:0 0 0 3px rgba(244,194,13,.5)}
+textarea.i{min-height:84px;resize:vertical;font-size:16px}
+input.i.num{font-size:21px;font-weight:600}
+.trio{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.duo{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.sp{flex:1}
+
+/* ---------- telas de lista ---------- */
+.pagina{max-width:920px;margin:0 auto;padding:28px 24px 80px}
+.marca{display:flex;align-items:flex-end;gap:16px;margin-bottom:28px}
+.marca svg{flex:none}
+.marca h1{font-size:44px;font-weight:800;font-stretch:80%;letter-spacing:-.5px}
+.marca p{margin:4px 0 0;color:var(--grafite2)}
+.lista{display:grid;gap:10px;margin:18px 0}
+.item{display:flex;align-items:center;gap:14px;background:var(--branco);border:1.5px solid var(--linha);border-radius:12px;padding:14px 16px;text-align:left;width:100%}
+.item:active{border-color:var(--grafite)}
+.item h3{font-size:19px}
+.item .muted{font-size:14px;margin-top:2px}
+.vazio{border:2px dashed var(--linha);border-radius:14px;padding:32px;text-align:center;color:var(--grafite2)}
+.aviso{background:#FFF6D6;border:1.5px solid var(--trena2);border-radius:10px;padding:12px 14px;margin:12px 0;font-size:15px}
+.secao{margin-top:30px}
+.secao>h2{font-size:22px;margin-bottom:12px}
+.cardgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px}
+.amb{background:var(--branco);border:1.5px solid var(--linha);border-radius:12px;padding:14px;text-align:left;min-height:108px;display:flex;flex-direction:column;gap:6px}
+.amb h3{font-size:18px}
+.barra{height:6px;background:var(--grade);border-radius:3px;overflow:hidden;margin-top:auto}
+.barra i{display:block;height:100%;background:var(--grafite)}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chip{min-height:44px;padding:0 14px;border-radius:22px;border:1.5px solid var(--linha);background:var(--branco);font-weight:600}
+.chip.on{background:var(--trena);border-color:var(--grafite)}
+.chip.erro{border-color:var(--vermelho)}
+
+/* ---------- editor de ambiente ---------- */
+.amb-app{display:grid;grid-template-rows:auto 1fr;height:100dvh}
+.topo{display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--grafite);color:var(--branco);min-height:60px}
+.topo .btn{background:transparent;color:var(--branco);border-color:#5b635e}
+.topo select{background:transparent;color:var(--branco);border:1.5px solid #5b635e;border-radius:8px;min-height:44px;padding:0 10px;font-weight:700;font-size:17px;max-width:220px}
+.topo select option{color:var(--grafite)}
+.abas{display:flex;gap:4px;margin-left:8px;overflow-x:auto;min-width:0;flex:0 1 auto;scrollbar-width:none}
+.abas button{min-height:44px;padding:0 14px;border:0;border-radius:8px;background:transparent;color:#c9d2c7;font-weight:600;white-space:nowrap}
+.topo>.btn{white-space:nowrap;max-width:190px;overflow:hidden;text-overflow:ellipsis;display:block;line-height:44px}
+.abas button.on{background:var(--trena);color:var(--grafite)}
+.status{font-size:13px;color:#c9d2c7;white-space:nowrap}
+.work{display:grid;grid-template-columns:1fr 390px;min-height:0}
+.work.cheio{grid-template-columns:1fr}
+.palco{position:relative;overflow:hidden;min-height:0}
+.palco canvas{display:block;width:100%;height:100%;touch-action:none}
+.painel{background:var(--branco);border-left:1.5px solid var(--linha);overflow:auto;padding:18px 18px 60px;min-height:0}
+.painel h2{font-size:24px;font-weight:800;font-stretch:85%}
+.painel h3{font-size:17px;margin:22px 0 10px}
+.trilho{position:absolute;left:12px;top:12px;display:flex;flex-direction:column;gap:8px}
+.trilho button{width:54px;height:54px;border-radius:12px;border:1.5px solid var(--grafite);background:var(--branco);display:grid;place-items:center;padding:0}
+.trilho button.on{background:var(--trena)}
+.trilho hr{border:0;height:6px;margin:0}
+.dica{position:absolute;left:80px;right:16px;bottom:14px;background:rgba(251,252,250,.94);border:1.5px solid var(--linha);border-radius:10px;padding:10px 14px;font-size:15px;pointer-events:none}
+.resultado{background:var(--papel);border-radius:10px;padding:12px 14px;margin:6px 0 14px}
+.resultado b{font-size:26px;font-stretch:75%}
+.resultado.erro{background:#FBE3E0;color:#7c1f18}
+.resultado.ok{background:#E2EFE4}
+.lin{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--grade);width:100%;background:none;border-left:0;border-right:0;border-top:0;text-align:left;min-height:52px}
+.lin .tag{min-width:34px;height:34px;border-radius:17px;border:1.5px solid var(--grafite);display:grid;place-items:center;font-weight:800;background:#fff}
+.lin .tag.m{background:var(--trena)}
+.lin .v{margin-left:auto;font-weight:700;font-stretch:75%;font-size:19px}
+.alerta{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border-radius:10px;margin-bottom:8px;border:1.5px solid var(--linha);background:#fff;text-align:left;width:100%;font-size:15px;line-height:1.35}
+.alerta.erro{border-color:var(--vermelho);background:#FDF0EE}
+.alerta .ic{flex:none;width:22px;height:22px;border-radius:11px;display:grid;place-items:center;font-weight:800;font-size:13px;background:var(--grade)}
+.alerta.erro .ic{background:var(--vermelho);color:#fff}
+.conteudo{overflow:auto;padding:22px 26px 80px}
+.conteudo .inner{max-width:900px}
+.check{display:flex;gap:14px;align-items:center;padding:12px 4px;border-bottom:1px solid var(--grade);cursor:pointer;font-size:17px}
+.check input{width:28px;height:28px;accent-color:var(--grafite);flex:none}
+.check.ok span{color:var(--grafite2);text-decoration:line-through}
+.fotos{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px}
+.foto{background:#fff;border:1.5px solid var(--linha);border-radius:10px;overflow:hidden;text-align:left;padding:0}
+.foto img{width:100%;aspect-ratio:4/3;object-fit:cover;display:block}
+.foto div{padding:8px 10px;font-size:14px}
+.elev{width:100%;flex:1;min-height:0;display:block;touch-action:manipulation}
+.elev-wrap{position:absolute;inset:0;padding:70px 20px 20px;display:flex;flex-direction:column}
+.elev-chips{position:absolute;left:16px;top:14px;right:16px}
+
+dialog{border:0;border-radius:16px;padding:0;max-width:min(560px,94vw);width:100%;box-shadow:0 20px 60px rgba(0,0,0,.35)}
+dialog::backdrop{background:rgba(38,42,40,.55)}
+.dlg{padding:22px}
+.dlg h2{font-size:24px;margin-bottom:16px}
+#toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--grafite);color:var(--branco);padding:14px 20px;border-radius:12px;font-weight:600;opacity:0;pointer-events:none;transition:opacity .2s;z-index:9;max-width:90vw}
+#toast.on{opacity:1}
+#print{display:none}
+
+@media (orientation:portrait) and (max-width:1100px){
+  .work{grid-template-columns:1fr;grid-template-rows:56% 44%}
+  .work.cheio{grid-template-rows:1fr}
+  .painel{border-left:0;border-top:1.5px solid var(--linha)}
+  .abas button{padding:0 10px}
+  .status{display:none}
+  .topo>.btn{max-width:130px}
+}
+@media (max-width:760px){ .status{display:none} .topo select{max-width:130px} }
+@media (prefers-reduced-motion:reduce){ #toast{transition:none} }
+
+/* ---------- impressão / PDF ---------- */
+@media print{
+  @page{size:A4;margin:12mm}
+  html,body{background:#fff}
+  body>*:not(#print){display:none!important}
+  #print{display:block;color:#111;font-size:11pt}
+  .pg{break-before:page}
+  .pg:first-child{break-before:auto}
+  .cab{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2.5pt solid #111;padding-bottom:6pt;margin-bottom:10pt}
+  .cab h1{font-size:20pt;font-stretch:80%}
+  .cab .emp{text-align:right;font-size:10pt}
+  #print h2{font-size:15pt;margin:10pt 0 6pt}
+  #print h3{font-size:12pt;margin:10pt 0 4pt}
+  #print table{width:100%;border-collapse:collapse;font-size:10pt;margin:4pt 0 8pt}
+  #print th,#print td{border:0.6pt solid #999;padding:3pt 5pt;text-align:left}
+  #print th{background:#eee}
+  #print td.n{text-align:right;font-stretch:80%;font-variant-numeric:tabular-nums}
+  #print .planta{width:100%;border:0.6pt solid #999}
+  #print .elevp{width:100%;max-height:95mm;border:0.6pt solid #ccc;margin-bottom:4pt}
+  #print .bloco{break-inside:avoid}
+  #print .fg{display:grid;grid-template-columns:1fr 1fr;gap:6pt}
+  #print .fg figure{margin:0;break-inside:avoid}
+  #print .fg img{width:100%;max-height:70mm;object-fit:cover;border:0.6pt solid #999}
+  #print figcaption{font-size:9pt}
+  #print .al{border-left:3pt solid #C4372C;padding:2pt 6pt;margin:3pt 0;font-size:10pt}
+  #print .al.av{border-left-color:#C99A00}
+}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="print"></div>
+<div id="toast" role="status" aria-live="polite"></div>
+<dialog id="dlg"></dialog>
+<input type="file" id="arqFoto" accept="image/*" capture="environment" hidden>
+<input type="file" id="arqGaleria" accept="image/*" multiple hidden>
+<input type="file" id="arqBackup" accept="application/json,.json" hidden>
+
+<script>
+'use strict';
+/* =========================================================
+   Esquadro — levantamento de medidas para móveis planejados
+   Entrega 1: levantamento (planta 2D, vistas, checklist, fotos, PDF técnico)
+   ========================================================= */
+const VERSAO = '1.0.1';
+
+/* ---------- utilidades ---------- */
+const $ = (s, r = document) => r.querySelector(s);
+function h(tag, attrs, ...kids) {
+  const el = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs || {})) {
+    if (v == null || v === false) continue;
+    if (k === 'class') el.className = v;
+    else if (k === 'style') el.style.cssText = v;
+    else if (k === 'html') el.innerHTML = v;
+    else if (k.startsWith('on')) el.addEventListener(k.slice(2), v);
+    else if (k === 'value') el.value = v;
+    else el.setAttribute(k, v === true ? '' : v);
+  }
+  for (const kid of kids.flat(Infinity)) {
+    if (kid == null || kid === false) continue;
+    el.append(kid.nodeType ? kid : document.createTextNode(String(kid)));
+  }
+  return el;
+}
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+const r10 = v => Math.round(v / 10) * 10;
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const letra = i => i < 26 ? String.fromCharCode(65 + i) : 'P' + (i + 1);
+const dataBR = t => new Date(t).toLocaleDateString('pt-BR');
+function toast(msg) {
+  const t = $('#toast'); t.textContent = msg; t.classList.add('on');
+  clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.remove('on'), 2800);
+}
+const ICO = {
+  caneta: '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20l4-1L19 8l-3-3L5 16z"/><path d="M14 7l3 3"/></svg>',
+  mao: '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18M3 12h18M12 3l-3 3M12 3l3 3M12 21l-3-3M12 21l3-3M3 12l3-3M3 12l3 3M21 12l-3-3M21 12l-3 3"/></svg>',
+  orto: '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 4v15h15"/><path d="M5 14h5v5"/></svg>',
+  desfazer: '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 010 12h-3"/></svg>',
+  enquadrar: '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"/></svg>',
+  marca: '<svg width="58" height="58" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="#F4C20D"/><path d="M16 12v36h36v-10H26V12z" fill="#262A28"/><path d="M20 44h4M20 38h2M20 32h4M20 26h2M20 20h4" stroke="#F4C20D" stroke-width="2"/></svg>'
+};
+
+/* ---------- configuração ---------- */
+const cfg = { empresa: '', responsavel: '', telefone: '', unidade: 'mm', tolerancia: 5, dedoDesenha: false };
+function fmtLen(mm, suf = true) {
+  if (mm == null || isNaN(mm)) return '—';
+  if (cfg.unidade === 'cm') {
+    const v = (Math.round(mm) / 10).toLocaleString('pt-BR', { maximumFractionDigits: 1 });
+    return suf ? v + ' cm' : v;
+  }
+  const v = String(Math.round(mm));
+  return suf ? v + ' mm' : v;
+}
+function parseLen(str) {
+  if (str == null) return null;
+  const s = String(str).trim().replace(',', '.');
+  if (s === '') return null;
+  const v = parseFloat(s);
+  if (isNaN(v)) return null;
+  return cfg.unidade === 'cm' ? v * 10 : v;
+}
+function toInput(mm) {
+  if (mm == null) return '';
+  if (cfg.unidade === 'cm') return String(Math.round(mm) / 10).replace('.', ',');
+  return String(Math.round(mm));
+}
+const un = () => cfg.unidade;
+
+/* ---------- banco local (IndexedDB) ---------- */
+const DB = {
+  db: null, ok: false,
+  mem: { projetos: new Map(), fotos: new Map(), config: new Map() },
+  async abrir() {
+    try {
+      this.db = await new Promise((res, rej) => {
+        const r = indexedDB.open('esquadro', 1);
+        r.onupgradeneeded = () => {
+          const d = r.result;
+          d.createObjectStore('projetos', { keyPath: 'id' });
+          const f = d.createObjectStore('fotos', { keyPath: 'id' });
+          f.createIndex('projetoId', 'projetoId');
+          d.createObjectStore('config', { keyPath: 'k' });
+        };
+        r.onsuccess = () => res(r.result);
+        r.onerror = () => rej(r.error);
+      });
+      this.ok = true;
+    } catch (e) { this.ok = false; }
+  },
+  tx(store, mode, fn) {
+    return new Promise((res, rej) => {
+      const t = this.db.transaction(store, mode);
+      const req = fn(t.objectStore(store));
+      t.oncomplete = () => res(req ? req.result : undefined);
+      t.onerror = () => rej(t.error);
+    });
+  },
+  put(store, obj) {
+    if (!this.ok) { this.mem[store].set(obj.id ?? obj.k, obj); return Promise.resolve(); }
+    return this.tx(store, 'readwrite', s => s.put(obj));
+  },
+  get(store, key) {
+    if (!this.ok) return Promise.resolve(this.mem[store].get(key));
+    return this.tx(store, 'readonly', s => s.get(key));
+  },
+  all(store) {
+    if (!this.ok) return Promise.resolve([...this.mem[store].values()]);
+    return this.tx(store, 'readonly', s => s.getAll());
+  },
+  del(store, key) {
+    if (!this.ok) { this.mem[store].delete(key); return Promise.resolve(); }
+    return this.tx(store, 'readwrite', s => s.delete(key));
+  },
+  fotosDe(pid) {
+    if (!this.ok) return Promise.resolve([...this.mem.fotos.values()].filter(f => f.projetoId === pid));
+    return this.tx('fotos', 'readonly', s => s.index('projetoId').getAll(pid));
+  }
+};
+
+/* ---------- modelos ---------- */
+const TIPOS = { cozinha: 'Cozinha', dormitorio: 'Dormitório', banheiro: 'Banheiro', lavanderia: 'Lavanderia', sala: 'Sala', escritorio: 'Home office', closet: 'Closet', outro: 'Outro ambiente' };
+function novoProjeto() {
+  return { id: uid(), cliente: { nome: '', telefone: '', endereco: '', obs: '' }, ambientes: [], criadoEm: Date.now(), atualizadoEm: Date.now() };
+}
+function novoAmbiente(tipo, existentes) {
+  let nome = TIPOS[tipo];
+  const n = existentes.filter(a => a.tipo === tipo).length;
+  if (n) nome += ' ' + (n + 1);
+  return { id: uid(), tipo, nome, peDireito: { a: null, b: null, c: null }, planta: { origem: { x: 0, y: 0 }, fechado: false, inverter: false, paredes: [] }, cantos: {}, checklist: {}, obs: '' };
+}
+function novaParede(ang, len) {
+  return { id: uid(), ang, lenEsboco: len, med: { base: null, meio: null, topo: null }, prumo: null, rodape: { h: null, esp: null }, pontos: [], obs: '' };
+}
+
+const PONTOS = {
+  tomada:      { n: 'Tomada', c: 'T', cor: '#9A7300', y: 300 },
+  interruptor: { n: 'Interruptor', c: 'I', cor: '#9A7300', y: 1100 },
+  agua:        { n: 'Ponto de água', c: 'A', cor: '#2F5E8C', y: 600 },
+  esgoto:      { n: 'Esgoto', c: 'E', cor: '#5B635E', y: 500 },
+  gas:         { n: 'Gás', c: 'G', cor: '#C8641B', y: 600 },
+  janela:      { n: 'Janela', box: true, cor: '#2F5E8C', w: 1200, h: 1200, y: 1000 },
+  porta:       { n: 'Porta', box: true, cor: '#5B635E', w: 800, h: 2100, y: 0 },
+  viga:        { n: 'Viga', box: true, cor: '#262A28', w: null, h: 300, y: null },
+  pilar:       { n: 'Pilar', box: true, cor: '#262A28', w: 300, h: null, y: 0 },
+  ar:          { n: 'Ar-condicionado', box: true, cor: '#2F5E8C', w: 900, h: 300, y: 2100 },
+  quadro:      { n: 'Quadro elétrico', box: true, cor: '#9A7300', w: 300, h: 400, y: 1500 },
+  outro:       { n: 'Outro', c: '?', cor: '#5B635E', y: 1000 }
+};
+
+const CHECK_BASE = [
+  ['Obra pronta para medir', ['Piso final instalado', 'Rodapé instalado ou modelo definido', 'Portas e janelas instaladas com guarnição', 'Forro, gesso e sancas finalizados', 'Pontos elétricos e hidráulicos definidos']],
+  ['Medição', ['Cada parede medida em 3 alturas', 'Pé-direito medido em 3 pontos', 'Esquadro conferido em todos os cantos', 'Prumo das paredes conferido', 'Nível do piso conferido', 'Vigas, pilares e sancas registrados', 'Tomadas e interruptores registrados', 'Foto de cada parede']],
+  ['Com o cliente', ['O que vai ser guardado nos móveis', 'Cores, padrões de MDF e puxadores', 'Altura de quem mais usa o ambiente', 'Prazo e faixa de orçamento']]
+];
+const CHECK_TIPO = {
+  cozinha: ['Geladeira: largura, altura, profundidade e abertura da porta', 'Fogão ou cooktop e forno: modelo e medidas', 'Coifa ou depurador: modelo e saída do duto', 'Cuba e torneira: modelo e altura da torneira', 'Lava-louças: sim ou não, e medidas', 'Micro-ondas: embutido ou livre', 'Ponto de gás e registro', 'Água e esgoto da pia: altura e posição'],
+  dormitorio: ['Tamanho da cama (solteiro, casal, queen, king)', 'Criados-mudos: sim ou não', 'Ar-condicionado: posição da evaporadora e do dreno', 'TV: tamanho e ponto de antena', 'Cortina ou persiana: trilho ou varão', 'Abertura da porta e da janela sem bater no móvel'],
+  banheiro: ['Vaso sanitário: posição do eixo', 'Box: tipo e largura', 'Registros e ponto de água da cuba', 'Ralo e esgoto da cuba', 'Espelho e iluminação', 'Tomada para secador'],
+  lavanderia: ['Máquina de lavar: medidas e abertura (frontal ou superior)', 'Secadora: sim ou não', 'Tanque: modelo e medidas', 'Aquecedor a gás: posição e ventilação', 'Água e esgoto da máquina'],
+  sala: ['TV: tamanho e altura desejada', 'Aparelhos (receptor, videogame, som)', 'Ar-condicionado', 'Cortina ou persiana'],
+  escritorio: ['Monitores: quantidade e tamanho', 'Computador: gabinete ou notebook', 'Impressora e outros equipamentos', 'Tomadas e rede na altura da mesa'],
+  closet: ['Cabideiros: roupa longa e roupa curta', 'Sapateira: quantos pares', 'Gavetas e divisórias', 'Espelho e iluminação'],
+  outro: []
+};
+function checklistDe(amb) {
+  const g = CHECK_BASE.map(([t, it]) => [t, it]);
+  const esp = CHECK_TIPO[amb.tipo] || [];
+  if (esp.length) g.splice(2, 0, [TIPOS[amb.tipo] + ': itens do ambiente', esp]);
+  return g;
+}
+
+/* ---------- geometria ---------- */
+function medProjeto(med) {
+  const v = [med.base, med.meio, med.topo].filter(x => x != null && x > 0);
+  return v.length ? Math.min(...v) : null;
+}
+function variacao(med) {
+  const v = [med.base, med.meio, med.topo].filter(x => x != null && x > 0);
+  return v.length >= 2 ? Math.max(...v) - Math.min(...v) : null;
+}
+function peDireitoProj(amb) {
+  const v = [amb.peDireito.a, amb.peDireito.b, amb.peDireito.c].filter(x => x != null && x > 0);
+  return v.length ? Math.min(...v) : null;
+}
+function pip(x, y, poly) {
+  let dentro = false;
+  for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+    const a = poly[i], b = poly[j];
+    if (((a.y > y) !== (b.y > y)) && (x < (b.x - a.x) * (y - a.y) / (b.y - a.y) + a.x)) dentro = !dentro;
+  }
+  return dentro;
+}
+function geo(amb) {
+  const P = amb.planta, n = P.paredes.length;
+  const pts = [{ x: P.origem.x, y: P.origem.y }];
+  const walls = [];
+  P.paredes.forEach((w, i) => {
+    const m = medProjeto(w.med);
+    const a = w.ang * Math.PI / 180;
+    const dx = Math.cos(a), dy = Math.sin(a);
+    const p0 = pts[i];
+    let L = m ?? w.lenEsboco;
+    // parede de fechamento sem medida se ajusta sozinha para fechar o contorno
+    if (P.fechado && i === n - 1 && m == null) {
+      const proj = (P.origem.x - p0.x) * dx + (P.origem.y - p0.y) * dy;
+      if (proj > 0) L = proj;
+    }
+    const p1 = { x: p0.x + dx * L, y: p0.y + dy * L };
+    pts.push(p1);
+    walls.push({ i, w, p0, p1, L, medido: m != null, dx, dy });
+  });
+  const poly = P.fechado ? pts.slice(0, -1) : pts;
+  walls.forEach(g => {
+    let nx = -g.dy, ny = g.dx;
+    if (P.fechado && poly.length >= 3) {
+      const mx = (g.p0.x + g.p1.x) / 2 + nx * 40, my = (g.p0.y + g.p1.y) / 2 + ny * 40;
+      if (!pip(mx, my, poly)) { nx = -nx; ny = -ny; }
+    } else if (P.inverter) { nx = -nx; ny = -ny; }
+    g.nIn = { x: nx, y: ny };
+    // quem olha a parede de dentro do ambiente: qual ponta fica à esquerda?
+    const fx = -nx, fy = -ny, lx = fy, ly = -fx;
+    const d = (g.p0.x - g.p1.x) * lx + (g.p0.y - g.p1.y) * ly;
+    g.esq = d > 0 ? 0 : 1;
+    g.vEsq = g.esq === 0 ? g.i : g.i + 1;          // índice do canto à esquerda
+    g.vDir = g.esq === 0 ? g.i + 1 : g.i;
+    if (P.fechado) { g.vEsq %= n; g.vDir %= n; }
+  });
+  const fim = pts[pts.length - 1];
+  const gap = P.fechado ? Math.hypot(fim.x - P.origem.x, fim.y - P.origem.y) : null;
+  return { pts, walls, gap, nV: P.fechado ? n : n + (n ? 1 : 0) };
+}
+// paredes que tocam o canto v
+function paredesDoCanto(amb, v) {
+  const P = amb.planta, n = P.paredes.length;
+  let ant = v - 1, prox = v;
+  if (P.fechado) { ant = (v - 1 + n) % n; prox = v % n; }
+  return { ant: ant >= 0 && ant < n ? ant : null, prox: prox < n ? prox : null };
+}
+function anguloProjeto(G, ant, prox) {
+  const a = G.walls[ant], b = G.walls[prox];
+  const c = (-a.dx) * b.dx + (-a.dy) * b.dy;
+  return Math.acos(Math.max(-1, Math.min(1, c))) * 180 / Math.PI;
+}
+function calcEsquadro(amb, v, G) {
+  const c = amb.cantos[v];
+  if (!c || !c.a || !c.b || !c.d) return null;
+  const cos = (c.a * c.a + c.b * c.b - c.d * c.d) / (2 * c.a * c.b);
+  if (cos < -1 || cos > 1) return { invalido: true };
+  const ang = Math.acos(cos) * 180 / Math.PI;
+  const { ant, prox } = paredesDoCanto(amb, v);
+  const proj = (ant != null && prox != null) ? anguloProjeto(G, ant, prox) : 90;
+  const dev = ang - proj;
+  const Lmax = Math.max(ant != null ? G.walls[ant].L : 0, prox != null ? G.walls[prox].L : 0) || 1000;
+  const mm = Math.abs(Math.tan(dev * Math.PI / 180) * Lmax);
+  return { ang, proj, dev, mm, Lmax, fora: mm > cfg.tolerancia };
+}
+function snapAng(deg) {
+  deg = ((deg % 360) + 360) % 360;
+  if (S.orto) {
+    const r90 = Math.round(deg / 90) * 90;
+    if (Math.abs(deg - r90) <= 20) return r90 % 360;
+    const r45 = Math.round(deg / 45) * 45;
+    if (Math.abs(deg - r45) <= 8) return r45 % 360;
+  }
+  return Math.round(deg) % 360;
+}
+function rdp(pts, eps) {
+  if (pts.length < 3) return pts.slice();
+  const a = pts[0], b = pts[pts.length - 1];
+  let idx = -1, max = 0;
+  const L = Math.hypot(b.x - a.x, b.y - a.y) || 1;
+  for (let i = 1; i < pts.length - 1; i++) {
+    const p = pts[i];
+    const d = Math.abs((b.y - a.y) * p.x - (b.x - a.x) * p.y + b.x * a.y - b.y * a.x) / L;
+    if (d > max) { max = d; idx = i; }
+  }
+  if (max > eps) {
+    const l = rdp(pts.slice(0, idx + 1), eps), r = rdp(pts.slice(idx), eps);
+    return l.slice(0, -1).concat(r);
+  }
+  return [a, b];
+}
+function distSeg(p, a, b) {
+  const vx = b.x - a.x, vy = b.y - a.y, L2 = vx * vx + vy * vy || 1;
+  let t = ((p.x - a.x) * vx + (p.y - a.y) * vy) / L2;
+  t = Math.max(0, Math.min(1, t));
+  return Math.hypot(p.x - a.x - t * vx, p.y - a.y - t * vy);
+}
+
+/* ---------- alertas ---------- */
+function alertas(amb) {
+  const A = [], tol = cfg.tolerancia, P = amb.planta, G = geo(amb);
+  if (!P.paredes.length) { A.push({ n: 'av', t: 'Nenhuma parede desenhada ainda.' }); return A; }
+  G.walls.forEach(g => {
+    const nm = letra(g.i), ref = { tipo: 'parede', i: g.i };
+    if (!g.medido) A.push({ n: 'av', t: `Parede ${nm} sem medida. O desenho usa o tamanho do croqui.`, ref });
+    const v = variacao(g.w.med);
+    if (v != null && v > tol) A.push({ n: 'erro', t: `Parede ${nm} varia ${fmtLen(v)} entre as alturas. Projete pela menor medida (${fmtLen(g.L)}).`, ref });
+    if (g.w.prumo != null && Math.abs(g.w.prumo) > tol) A.push({ n: 'erro', t: `Parede ${nm} fora de prumo em ${fmtLen(Math.abs(g.w.prumo))}. Preveja enchimento ou folga.`, ref });
+  });
+  if (P.fechado && G.gap != null && G.gap > tol && G.walls.every(g => g.medido)) {
+    A.push({ n: 'erro', t: `O contorno não fecha: sobram ${fmtLen(G.gap)}. Confira as medidas das paredes e o esquadro dos cantos.` });
+  }
+  for (let v = 0; v < G.nV; v++) {
+    const { ant, prox } = paredesDoCanto(amb, v);
+    if (ant == null || prox == null) continue;
+    const e = calcEsquadro(amb, v, G);
+    const ref = { tipo: 'canto', i: v };
+    if (!e) A.push({ n: 'av', t: `Canto ${v + 1} sem esquadro conferido.`, ref });
+    else if (e.invalido) A.push({ n: 'erro', t: `Canto ${v + 1}: as três medidas do esquadro não formam um triângulo. Meça de novo.`, ref });
+    else if (e.fora) A.push({ n: 'erro', t: `Canto ${v + 1} fora de esquadro: ${e.ang.toFixed(1).replace('.', ',')}°, abre ${fmtLen(e.mm)} ao longo de ${fmtLen(e.Lmax)}.`, ref });
+  }
+  const pd = [amb.peDireito.a, amb.peDireito.b, amb.peDireito.c].filter(x => x);
+  if (!pd.length) A.push({ n: 'av', t: 'Pé-direito não medido.', ref: { tipo: 'amb' } });
+  else if (pd.length >= 2 && Math.max(...pd) - Math.min(...pd) > tol) A.push({ n: 'erro', t: `Pé-direito varia ${fmtLen(Math.max(...pd) - Math.min(...pd))}. Teto desnivelado: use a menor altura (${fmtLen(Math.min(...pd))}).`, ref: { tipo: 'amb' } });
+  const tot = checklistDe(amb).reduce((s, g) => s + g[1].length, 0);
+  const feitos = Object.values(amb.checklist).filter(Boolean).length;
+  if (feitos < tot) A.push({ n: 'av', t: `Checklist com ${tot - feitos} de ${tot} itens pendentes.`, ref: { tipo: 'aba', aba: 'checklist' } });
+  return A;
+}
+function progresso(amb) {
+  const P = amb.planta;
+  const tot = checklistDe(amb).reduce((s, g) => s + g[1].length, 0);
+  const feitos = Object.values(amb.checklist).filter(Boolean).length;
+  const med = P.paredes.filter(w => medProjeto(w.med) != null).length;
+  const partes = [P.paredes.length ? med / P.paredes.length : 0, feitos / (tot || 1), peDireitoProj(amb) ? 1 : 0];
+  return partes.reduce((a, b) => a + b, 0) / partes.length;
+}
+
+/* ---------- estado ---------- */
+const S = { tela: 'home', lista: [], projeto: null, ambId: null, aba: 'planta', sel: null, ferramenta: 'desenhar', orto: true, undo: [], vistas: {}, paredeVista: 0, fotos: [], urls: new Map() };
+const amb = () => S.projeto && S.projeto.ambientes.find(a => a.id === S.ambId);
+
+let _tSalvar;
+function salvar() {
+  if (!S.projeto) return;
+  S.projeto.atualizadoEm = Date.now();
+  statusSalvo('Salvando…');
+  clearTimeout(_tSalvar);
+  _tSalvar = setTimeout(async () => {
+    try { await DB.put('projetos', S.projeto); statusSalvo(DB.ok ? 'Salvo no tablet' : 'Modo de teste'); }
+    catch (e) { statusSalvo('Erro ao salvar'); toast('Não consegui salvar. Exporte um backup agora.'); }
+  }, 350);
+}
+function statusSalvo(t) { const el = $('#status'); if (el) el.textContent = t; }
+
+/* ---------- navegação ---------- */
+async function irHome() {
+  S.tela = 'home'; S.projeto = null; S.ambId = null;
+  S.lista = (await DB.all('projetos')).sort((a, b) => b.atualizadoEm - a.atualizadoEm);
+  render();
+}
+async function abrirProjeto(p) {
+  S.projeto = p; S.tela = 'projeto'; S.ambId = null;
+  S.fotos = await DB.fotosDe(p.id);
+  render();
+}
+function abrirAmbiente(id, aba = 'planta') {
+  S.ambId = id; S.tela = 'ambiente'; S.aba = aba; S.sel = null; S.undo = []; S.paredeVista = 0; S.fotoParede = null;
+  render();
+}
+function render() {
+  const app = $('#app'); app.innerHTML = '';
+  if (S.tela === 'home') app.append(telaHome());
+  else if (S.tela === 'projeto') app.append(telaProjeto());
+  else app.append(telaAmbiente());
+}
+
+/* ---------- tela: início ---------- */
+function telaHome() {
+  const pg = h('div', { class: 'pagina' },
+    h('div', { class: 'marca' }, h('span', { html: ICO.marca }),
+      h('div', {}, h('h1', {}, 'Esquadro'), h('p', {}, 'Levantamento de medidas para móveis planejados'))),
+    !DB.ok && h('div', { class: 'aviso' }, 'Modo de teste: os dados ficam só nesta tela e somem ao fechar. Instale o app pelo endereço do GitHub Pages para salvar no tablet.'),
+    h('div', { class: 'row' },
+      h('button', { class: 'btn am', onclick: novoCliente }, 'Novo cliente'),
+      h('span', { class: 'sp' }),
+      h('button', { class: 'btn lite', onclick: dlgConfig }, 'Configurações'),
+      h('button', { class: 'btn lite', onclick: dlgBackup }, 'Backup')),
+  );
+  if (!S.lista.length) {
+    pg.append(h('div', { class: 'vazio', style: 'margin-top:22px' },
+      h('p', { style: 'font-size:18px;margin:0 0 6px;color:#262A28;font-weight:600' }, 'Nenhum cliente ainda'),
+      h('p', { style: 'margin:0' }, 'Crie um cliente, adicione os ambientes e desenhe as paredes com a caneta.')));
+  } else {
+    pg.append(h('div', { class: 'lista' }, S.lista.map(p => {
+      const n = p.ambientes.length;
+      return h('button', { class: 'item', onclick: () => abrirProjeto(p) },
+        h('div', { class: 'sp' },
+          h('h3', {}, p.cliente.nome || 'Cliente sem nome'),
+          h('div', { class: 'muted' }, `${n} ${n === 1 ? 'ambiente' : 'ambientes'}, atualizado em ${dataBR(p.atualizadoEm)}`)),
+        h('span', { class: 'muted', style: 'font-size:14px' }, p.cliente.endereco || ''));
+    })));
+  }
+  if (!cfg.empresa) pg.append(h('p', { class: 'hint', style: 'margin-top:16px' }, 'Dica: coloque o nome da sua empresa em Configurações para ele sair no PDF.'));
+  return pg;
+}
+async function novoCliente() {
+  const p = novoProjeto();
+  await DB.put('projetos', p);
+  await abrirProjeto(p);
+  setTimeout(() => $('#cliNome')?.focus(), 50);
+}
+
+/* ---------- tela: cliente / projeto ---------- */
+function telaProjeto() {
+  const p = S.projeto, c = p.cliente;
+  const campo = (rot, chave, attrs = {}) => h('label', { class: 'f' }, h('span', {}, rot),
+    h(attrs.tag || 'input', { class: 'i', value: c[chave], id: attrs.id, type: attrs.type, inputmode: attrs.inputmode, oninput: e => { c[chave] = e.target.value; salvar(); } }));
+  const ambs = p.ambientes;
+  return h('div', { class: 'pagina' },
+    h('div', { class: 'row', style: 'margin-bottom:18px' },
+      h('button', { class: 'btn lite sm', onclick: irHome }, 'Voltar para clientes'),
+      h('span', { class: 'sp' }),
+      h('span', { class: 'muted', id: 'status', style: 'font-size:14px' }, DB.ok ? 'Salvo no tablet' : 'Modo de teste')),
+    h('h1', { style: 'font-size:34px;font-stretch:82%;font-weight:800;margin-bottom:18px' }, c.nome || 'Novo cliente'),
+    h('div', { class: 'duo' }, campo('Nome do cliente', 'nome', { id: 'cliNome' }), campo('Telefone', 'telefone', { type: 'tel', inputmode: 'tel' })),
+    campo('Endereço da obra', 'endereco'),
+    campo('Observações', 'obs', { tag: 'textarea' }),
+    h('div', { class: 'secao' },
+      h('h2', {}, 'Ambientes'),
+      ambs.length ? h('div', { class: 'cardgrid' }, ambs.map(a => {
+        const al = alertas(a).filter(x => x.n === 'erro').length;
+        const pr = Math.round(progresso(a) * 100);
+        return h('button', { class: 'amb', onclick: () => abrirAmbiente(a.id) },
+          h('h3', {}, a.nome),
+          h('span', { class: 'muted', style: 'font-size:14px' }, `${a.planta.paredes.length} paredes, ${pr}% concluído`),
+          al ? h('span', { style: 'color:#C4372C;font-size:14px;font-weight:600' }, `${al} ${al === 1 ? 'ponto de atenção' : 'pontos de atenção'}`) : null,
+          h('div', { class: 'barra' }, h('i', { style: `width:${pr}%` })));
+      })) : h('div', { class: 'vazio' }, 'Escolha abaixo o primeiro ambiente que você vai medir.'),
+      h('h3', { style: 'font-size:16px;margin:18px 0 10px;color:#5B635E;font-weight:600' }, 'Adicionar ambiente'),
+      h('div', { class: 'chips' }, Object.entries(TIPOS).map(([k, v]) =>
+        h('button', { class: 'chip', onclick: () => { const a = novoAmbiente(k, ambs); ambs.push(a); salvar(); abrirAmbiente(a.id); } }, v)))),
+    h('div', { class: 'secao row' },
+      h('button', { class: 'btn pri', onclick: () => gerarPDF(p, ambs.map(a => a.id)), disabled: !ambs.length }, 'Gerar PDF técnico'),
+      h('span', { class: 'sp' }),
+      h('button', { class: 'btn perigo', onclick: excluirCliente }, 'Excluir cliente')),
+    h('p', { class: 'hint' }, 'No PDF: toque em Gerar, escolha a impressora "Salvar como PDF" e compartilhe.'));
+}
+async function excluirCliente() {
+  const p = S.projeto;
+  if (!confirm(`Excluir ${p.cliente.nome || 'este cliente'} com todos os ambientes e fotos? Não dá para desfazer.`)) return;
+  for (const f of await DB.fotosDe(p.id)) await DB.del('fotos', f.id);
+  await DB.del('projetos', p.id);
+  toast('Cliente excluído.');
+  irHome();
+}
+
+/* ---------- tela: ambiente ---------- */
+let CV = null; // estado do canvas
+function telaAmbiente() {
+  const a = amb();
+  const abas = [['planta', 'Planta'], ['vistas', 'Vistas'], ['checklist', 'Checklist'], ['fotos', 'Fotos'], ['resumo', 'Resumo']];
+  const nErros = alertas(a).filter(x => x.n === 'erro').length;
+  const topo = h('div', { class: 'topo' },
+    h('button', { class: 'btn sm', onclick: () => abrirProjeto(S.projeto), 'aria-label': 'Voltar ao cliente' }, S.projeto.cliente.nome || 'Cliente'),
+    h('select', { 'aria-label': 'Trocar de ambiente', onchange: e => abrirAmbiente(e.target.value, S.aba) },
+      S.projeto.ambientes.map(x => h('option', { value: x.id, selected: x.id === a.id }, x.nome))),
+    h('div', { class: 'abas', role: 'tablist' }, abas.map(([k, v]) => {
+      const rot = (k === 'resumo' && nErros) ? `${v} (${nErros})` : v;
+      return h('button', { class: S.aba === k ? 'on' : '', role: 'tab', onclick: () => { S.aba = k; S.sel = null; render(); } }, rot);
+    })),
+    h('span', { class: 'sp' }),
+    h('span', { class: 'status', id: 'status' }, DB.ok ? 'Salvo no tablet' : 'Modo de teste'));
+  let corpo;
+  if (S.aba === 'planta') corpo = abaPlanta(a);
+  else if (S.aba === 'vistas') corpo = abaVistas(a);
+  else if (S.aba === 'checklist') corpo = abaChecklist(a);
+  else if (S.aba === 'fotos') corpo = abaFotos(a);
+  else corpo = abaResumo(a);
+  return h('div', { class: 'amb-app' }, topo, corpo);
+}
+
+/* ===== aba planta ===== */
+function abaPlanta(a) {
+  const canvas = h('canvas', { id: 'cv' });
+  const btn = (id, ico, rot, fn, on) => h('button', { class: on ? 'on' : '', title: rot, 'aria-label': rot, onclick: fn, html: ico, id });
+  const trilho = h('div', { class: 'trilho' },
+    btn('tDes', ICO.caneta, 'Desenhar paredes', () => { S.ferramenta = 'desenhar'; atualizaTrilho(); }, S.ferramenta === 'desenhar'),
+    btn('tMov', ICO.mao, 'Mover e dar zoom', () => { S.ferramenta = 'mover'; atualizaTrilho(); }, S.ferramenta === 'mover'),
+    h('hr'),
+    btn('tOrto', ICO.orto, 'Endireitar em 90°', () => { S.orto = !S.orto; atualizaTrilho(); toast(S.orto ? 'Paredes vão endireitar em 90° e 45°.' : 'Ângulo livre ligado.'); }, S.orto),
+    btn('tUndo', ICO.desfazer, 'Desfazer', desfazer),
+    btn('tFit', ICO.enquadrar, 'Enquadrar desenho', () => { enquadrar(); desenhar(); }));
+  const dica = h('div', { class: 'dica', id: 'dica' });
+  const palco = h('div', { class: 'palco' }, canvas, trilho, dica);
+  const painel = h('div', { class: 'painel', id: 'painel' });
+  const work = h('div', { class: 'work' }, palco, painel);
+  requestAnimationFrame(() => iniciarCanvas(canvas, palco));
+  preencherPainel(painel, a);
+  return work;
+}
+function atualizaTrilho() {
+  $('#tDes')?.classList.toggle('on', S.ferramenta === 'desenhar');
+  $('#tMov')?.classList.toggle('on', S.ferramenta === 'mover');
+  $('#tOrto')?.classList.toggle('on', S.orto);
+}
+function atualizaDica() {
+  const el = $('#dica'); if (!el) return;
+  const a = amb(), P = a.planta;
+  let t = '';
+  if (!P.paredes.length) t = 'Desenhe o contorno do cômodo com a caneta, parede por parede ou tudo de uma vez. Com o dedo você move e dá zoom.';
+  else if (!P.fechado) t = 'Continue desenhando a partir do último canto. Para fechar o cômodo, termine o traço perto do primeiro canto.';
+  else if (P.paredes.some(w => medProjeto(w.med) == null)) t = 'Toque em uma parede para digitar a medida. Toque em um canto para conferir o esquadro.';
+  else t = '';
+  el.textContent = t; el.style.display = t ? '' : 'none';
+}
+
+function iniciarCanvas(canvas, palco) {
+  const ctx = canvas.getContext('2d');
+  if (CV && CV.ro) CV.ro.disconnect();
+  CV = { canvas, ctx, W: 0, H: 0, traco: null, ptrs: new Map(), pan: null, pinch: null, penAt: 0 };
+  const a = amb();
+  if (!S.vistas[a.id]) S.vistas[a.id] = { s: 0.15, ox: 120, oy: 120, auto: true };
+  const ro = new ResizeObserver(() => {
+    const r = palco.getBoundingClientRect(), dpr = window.devicePixelRatio || 1;
+    CV.W = r.width; CV.H = r.height;
+    canvas.width = Math.round(r.width * dpr); canvas.height = Math.round(r.height * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    if (S.vistas[a.id].auto) enquadrar();
+    desenhar();
+  });
+  ro.observe(palco);
+  CV.ro = ro;
+  canvas.addEventListener('pointerdown', ptrDown);
+  canvas.addEventListener('pointermove', ptrMove);
+  canvas.addEventListener('pointerup', ptrUp);
+  canvas.addEventListener('pointercancel', ptrUp);
+  canvas.addEventListener('wheel', e => {
+    e.preventDefault();
+    const p = posCanvas(e), f = Math.exp(-e.deltaY * 0.0015);
+    zoomEm(p, f); desenhar();
+  }, { passive: false });
+  atualizaDica();
+}
+const vista = () => S.vistas[S.ambId];
+const paraMundo = p => { const v = vista(); return { x: (p.x - v.ox) / v.s, y: (p.y - v.oy) / v.s }; };
+function posCanvas(e) { const r = CV.canvas.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; }
+function zoomEm(p, f) {
+  const v = vista(); const ns = Math.max(0.01, Math.min(3, v.s * f)); const k = ns / v.s;
+  v.ox = p.x - (p.x - v.ox) * k; v.oy = p.y - (p.y - v.oy) * k; v.s = ns; v.auto = false;
+}
+function enquadrar() {
+  const a = amb(), v = vista(); if (!CV || !CV.W) return;
+  const G = geo(a);
+  if (!a.planta.paredes.length) { v.s = 0.15; v.ox = CV.W * 0.25; v.oy = CV.H * 0.25; return; }
+  const xs = G.pts.map(p => p.x), ys = G.pts.map(p => p.y);
+  const x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys);
+  const pad = 110;
+  const s = Math.min((CV.W - pad * 2) / Math.max(x1 - x0, 500), (CV.H - pad * 2) / Math.max(y1 - y0, 500));
+  v.s = Math.max(0.01, Math.min(1.2, s));
+  v.ox = CV.W / 2 - (x0 + x1) / 2 * v.s; v.oy = CV.H / 2 - (y0 + y1) / 2 * v.s;
+}
+
+function ptrDown(e) {
+  const c = CV; const p = posCanvas(e);
+  if (e.pointerType === 'pen') c.penAt = Date.now();
+  const penNaTela = [...c.ptrs.values()].some(q => q.tipo === 'pen');
+  if (e.pointerType === 'touch' && (penNaTela || Date.now() - c.penAt < 600)) return; // ignora a palma da mão
+  c.canvas.setPointerCapture(e.pointerId);
+  c.ptrs.set(e.pointerId, { ...p, x0: p.x, y0: p.y, t0: performance.now(), tipo: e.pointerType });
+  const toques = [...c.ptrs.values()].filter(q => q.tipo === 'touch');
+  if (toques.length === 2) {
+    c.traco = null; c.pan = null;
+    const [q1, q2] = toques;
+    c.pinch = { d: Math.hypot(q1.x - q2.x, q1.y - q2.y), mx: (q1.x + q2.x) / 2, my: (q1.y + q2.y) / 2 };
+    return;
+  }
+  const botaoCaneta = e.pointerType === 'pen' && (e.buttons & 2); // botão lateral da S Pen move a tela
+  const desenha = !botaoCaneta && S.ferramenta === 'desenhar' && (e.pointerType === 'pen' || e.pointerType === 'mouse' || (e.pointerType === 'touch' && cfg.dedoDesenha));
+  if (desenha) c.traco = { id: e.pointerId, pts: [p] };
+  else c.pan = { id: e.pointerId, x: p.x, y: p.y };
+}
+function ptrMove(e) {
+  const c = CV; const q = c.ptrs.get(e.pointerId); if (!q) return;
+  const p = posCanvas(e); q.x = p.x; q.y = p.y;
+  if (c.pinch) {
+    const toques = [...c.ptrs.values()].filter(t => t.tipo === 'touch');
+    if (toques.length >= 2) {
+      const [q1, q2] = toques;
+      const d = Math.hypot(q1.x - q2.x, q1.y - q2.y), mx = (q1.x + q2.x) / 2, my = (q1.y + q2.y) / 2;
+      const v = vista(); v.ox += mx - c.pinch.mx; v.oy += my - c.pinch.my; v.auto = false;
+      zoomEm({ x: mx, y: my }, d / c.pinch.d);
+      c.pinch = { d, mx, my }; desenhar();
+    }
+    return;
+  }
+  if (c.traco && c.traco.id === e.pointerId) {
+    const evs = e.getCoalescedEvents ? e.getCoalescedEvents() : [e];
+    for (const ev of evs) c.traco.pts.push(posCanvas(ev));
+    desenhar(); return;
+  }
+  if (c.pan && c.pan.id === e.pointerId) {
+    const v = vista(); v.ox += p.x - c.pan.x; v.oy += p.y - c.pan.y; v.auto = false;
+    c.pan.x = p.x; c.pan.y = p.y; desenhar();
+  }
+}
+function ptrUp(e) {
+  const c = CV; const q = c.ptrs.get(e.pointerId); if (!q) return;
+  c.ptrs.delete(e.pointerId);
+  const moveu = Math.hypot(q.x - q.x0, q.y - q.y0), rapido = performance.now() - q.t0 < 400;
+  if (c.pinch) { if (c.ptrs.size < 2) c.pinch = null; return; }
+  if (c.traco && c.traco.id === e.pointerId) {
+    const pts = c.traco.pts; c.traco = null;
+    let comp = 0; for (let i = 1; i < pts.length; i++) comp += Math.hypot(pts[i].x - pts[i - 1].x, pts[i].y - pts[i - 1].y);
+    if (comp < 14) tocar({ x: q.x0, y: q.y0 }); else registrarTraco(pts);
+    desenhar(); return;
+  }
+  if (c.pan && c.pan.id === e.pointerId) {
+    c.pan = null;
+    if (moveu < 10 && rapido) tocar({ x: q.x0, y: q.y0 });
+  }
+}
+function tocar(p) {
+  const a = amb(), G = geo(a), v = vista();
+  const S2 = w => ({ x: w.x * v.s + v.ox, y: w.y * v.s + v.oy });
+  let melhor = null;
+  for (let i = 0; i < G.nV; i++) {
+    const d = Math.hypot(S2(G.pts[i]).x - p.x, S2(G.pts[i]).y - p.y);
+    if (d < 26 && (!melhor || d < melhor.d)) melhor = { tipo: 'canto', i, d };
+  }
+  if (!melhor) for (const g of G.walls) {
+    const d = distSeg(p, S2(g.p0), S2(g.p1));
+    if (d < 28 && (!melhor || d < melhor.d)) melhor = { tipo: 'parede', i: g.i, d };
+  }
+  S.sel = melhor ? { tipo: melhor.tipo, i: melhor.i } : null;
+  preencherPainel($('#painel'), a);
+  desenhar();
+  if (S.sel?.tipo === 'parede') setTimeout(() => $('#m_base')?.focus({ preventScroll: true }), 60);
+}
+function empilharDesfazer() {
+  S.undo.push(JSON.stringify({ planta: amb().planta, cantos: amb().cantos }));
+  if (S.undo.length > 40) S.undo.shift();
+}
+function desfazer() {
+  const a = amb();
+  if (!S.undo.length) { toast('Nada para desfazer.'); return; }
+  const st = JSON.parse(S.undo.pop());
+  a.planta = st.planta; a.cantos = st.cantos; S.sel = null;
+  salvar(); preencherPainel($('#painel'), a); desenhar(); atualizaDica();
+}
+function registrarTraco(sp) {
+  const a = amb(), P = a.planta, v = vista();
+  if (P.fechado) { toast('O contorno já está fechado. Use Desfazer para mudar o final.'); return; }
+  const simp = rdp(sp, 16);
+  const segs = [];
+  for (let i = 0; i < simp.length - 1; i++) {
+    const p = simp[i], q = simp[i + 1];
+    const L = Math.hypot(q.x - p.x, q.y - p.y);
+    if (L < 22) continue;
+    const ang = snapAng(Math.atan2(q.y - p.y, q.x - p.x) * 180 / Math.PI);
+    const len = r10(L / v.s);
+    const ult = segs[segs.length - 1];
+    if (ult && ult.ang === ang) ult.len += len; else segs.push({ ang, len });
+  }
+  if (!segs.length) return;
+  empilharDesfazer();
+  if (!P.paredes.length) { const o = paraMundo(sp[0]); P.origem = { x: r10(o.x), y: r10(o.y) }; }
+  else {
+    const ultima = P.paredes[P.paredes.length - 1];
+    if (ultima.ang === segs[0].ang && medProjeto(ultima.med) == null) { ultima.lenEsboco += segs[0].len; segs.shift(); }
+  }
+  segs.forEach(s => P.paredes.push(novaParede(s.ang, s.len)));
+  const G = geo(a), fim = G.pts[G.pts.length - 1];
+  const dTela = Math.hypot(fim.x - P.origem.x, fim.y - P.origem.y) * v.s;
+  let msg = `${segs.length === 1 ? 'Parede criada' : segs.length + ' paredes criadas'}. Toque nela para digitar a medida.`;
+  if (P.paredes.length >= 3 && dTela < 50) { fecharContorno(a, true); msg = 'Cômodo fechado. Agora toque em cada parede para digitar as medidas.'; }
+  salvar(); toast(msg);
+  preencherPainel($('#painel'), a); atualizaDica();
+}
+function fecharContorno(a, perto) {
+  const P = a.planta, G = geo(a), fim = G.pts[G.pts.length - 1];
+  const dx = P.origem.x - fim.x, dy = P.origem.y - fim.y, d = Math.hypot(dx, dy);
+  if (perto && P.paredes.length >= 3) {
+    const ult = P.paredes[P.paredes.length - 1], ini = G.pts[G.pts.length - 2];
+    const vx = P.origem.x - ini.x, vy = P.origem.y - ini.y;
+    ult.ang = snapAng(Math.atan2(vy, vx) * 180 / Math.PI);
+    ult.lenEsboco = r10(Math.hypot(vx, vy));
+  } else if (d > 1) {
+    P.paredes.push(novaParede(snapAng(Math.atan2(dy, dx) * 180 / Math.PI), r10(d)));
+  }
+  P.fechado = true;
+}
+
+/* ----- desenho da planta (tela e PDF) ----- */
+const COR = { papel: '#EDF0EA', grade: '#DCE3DA', grade2: '#C9D4C7', grafite: '#262A28', grafite2: '#5B635E', trena: '#F4C20D', vermelho: '#C4372C', azul: '#2F5E8C', ok: '#3E7A4F' };
+function fonte(ctx, peso, px) {
+  ctx.font = `${peso} ${px}px Archivo, system-ui, sans-serif`;
+  if ('fontStretch' in ctx) ctx.fontStretch = 'condensed';
+}
+function desenhar() {
+  if (!CV || !CV.W || !document.body.contains(CV.canvas) || !vista()) return;
+  const a = amb(); if (!a) return;
+  desenharPlanta(CV.ctx, a, CV.W, CV.H, vista(), { sel: S.sel, traco: CV.traco });
+}
+function desenharPlanta(ctx, a, W, H, v, o = {}) {
+  const k = o.k || 1, P = a.planta, G = geo(a);
+  const X = x => x * v.s + v.ox, Y = y => y * v.s + v.oy;
+  const T = p => ({ x: X(p.x), y: Y(p.y) });
+  ctx.save();
+  ctx.fillStyle = o.print ? '#fff' : COR.papel; ctx.fillRect(0, 0, W, H);
+  if (!o.print) {
+    // papel milimetrado: 10 cm e 1 m
+    const passos = [[100, COR.grade, 1], [1000, COR.grade2, 1.2]];
+    for (const [pm, cor, lw] of passos) {
+      const px = pm * v.s; if (px < 7) continue;
+      ctx.strokeStyle = cor; ctx.lineWidth = lw; ctx.beginPath();
+      for (let x = ((v.ox % px) + px) % px; x < W; x += px) { ctx.moveTo(x, 0); ctx.lineTo(x, H); }
+      for (let y = ((v.oy % px) + px) % px; y < H; y += px) { ctx.moveTo(0, y); ctx.lineTo(W, y); }
+      ctx.stroke();
+    }
+  }
+  if (P.fechado && G.pts.length > 3) {
+    ctx.beginPath(); G.pts.forEach((p, i) => i ? ctx.lineTo(X(p.x), Y(p.y)) : ctx.moveTo(X(p.x), Y(p.y))); ctx.closePath();
+    ctx.fillStyle = o.print ? '#F4F5F2' : 'rgba(251,252,250,.7)'; ctx.fill();
+  }
+  if (o.sel?.tipo === 'parede' && G.walls[o.sel.i]) {
+    const g = G.walls[o.sel.i];
+    ctx.strokeStyle = COR.trena; ctx.lineWidth = 18; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(X(g.p0.x), Y(g.p0.y)); ctx.lineTo(X(g.p1.x), Y(g.p1.y)); ctx.stroke();
+  }
+  ctx.strokeStyle = COR.grafite; ctx.lineWidth = 5 * k; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  G.walls.forEach(g => {
+    ctx.setLineDash(g.medido ? [] : [12 * k, 8 * k]);
+    ctx.beginPath(); ctx.moveTo(X(g.p0.x), Y(g.p0.y)); ctx.lineTo(X(g.p1.x), Y(g.p1.y)); ctx.stroke();
+  });
+  ctx.setLineDash([]);
+  if (P.fechado && G.gap > 1) {
+    const f = G.pts[G.pts.length - 1];
+    ctx.strokeStyle = COR.vermelho; ctx.lineWidth = 3 * k; ctx.setLineDash([6 * k, 5 * k]);
+    ctx.beginPath(); ctx.moveTo(X(f.x), Y(f.y)); ctx.lineTo(X(P.origem.x), Y(P.origem.y)); ctx.stroke(); ctx.setLineDash([]);
+  }
+  G.walls.forEach(g => pontosPlanta(ctx, g, T, k));
+  G.walls.forEach(g => cota(ctx, g, T, k));
+  // letras das paredes
+  G.walls.forEach(g => {
+    const m = T({ x: (g.p0.x + g.p1.x) / 2, y: (g.p0.y + g.p1.y) / 2 });
+    const x = m.x + g.nIn.x * 30 * k, y = m.y + g.nIn.y * 30 * k;
+    ctx.beginPath(); ctx.arc(x, y, 14 * k, 0, 7);
+    ctx.fillStyle = (o.sel?.tipo === 'parede' && o.sel.i === g.i) ? COR.trena : '#fff'; ctx.fill();
+    ctx.lineWidth = 1.8 * k; ctx.strokeStyle = COR.grafite; ctx.stroke();
+    ctx.fillStyle = COR.grafite; fonte(ctx, 800, 15 * k); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(letra(g.i), x, y + 1);
+  });
+  // cantos
+  for (let i = 0; i < G.nV; i++) {
+    const p = T(G.pts[i]); const e = calcEsquadro(a, i, G);
+    const { ant, prox } = paredesDoCanto(a, i);
+    const temDois = ant != null && prox != null;
+    let cor = COR.grafite;
+    if (e && (e.fora || e.invalido)) cor = COR.vermelho; else if (e) cor = COR.ok;
+    if (o.sel?.tipo === 'canto' && o.sel.i === i) { ctx.beginPath(); ctx.arc(p.x, p.y, 16, 0, 7); ctx.fillStyle = COR.trena; ctx.fill(); }
+    ctx.beginPath(); ctx.arc(p.x, p.y, (temDois ? 6.5 : 5) * k, 0, 7); ctx.fillStyle = cor; ctx.fill();
+    // número do canto para dentro
+    let nx = 0, ny = 0;
+    if (ant != null) { nx += G.walls[ant].nIn.x; ny += G.walls[ant].nIn.y; }
+    if (prox != null) { nx += G.walls[prox].nIn.x; ny += G.walls[prox].nIn.y; }
+    const nl = Math.hypot(nx, ny) || 1;
+    fonte(ctx, 700, 12 * k); ctx.fillStyle = cor; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(String(i + 1), p.x + nx / nl * 20 * k, p.y + ny / nl * 20 * k);
+  }
+  // traço em andamento
+  if (o.traco && o.traco.pts.length > 1) {
+    ctx.strokeStyle = COR.grafite2; ctx.lineWidth = 2.5; ctx.beginPath();
+    o.traco.pts.forEach((p, i) => i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y)); ctx.stroke();
+  }
+  ctx.restore();
+}
+function cota(ctx, g, T, k) {
+  const a0 = T(g.p0), b0 = T(g.p1);
+  const comp = Math.hypot(b0.x - a0.x, b0.y - a0.y); if (comp < 24) return;
+  const off = 40 * k, ox = -g.nIn.x * off, oy = -g.nIn.y * off;
+  const a = { x: a0.x + ox, y: a0.y + oy }, b = { x: b0.x + ox, y: b0.y + oy };
+  ctx.strokeStyle = COR.grafite2; ctx.lineWidth = 1 * k;
+  ctx.beginPath();
+  ctx.moveTo(a0.x - g.nIn.x * 8 * k, a0.y - g.nIn.y * 8 * k); ctx.lineTo(a.x - g.nIn.x * 6 * k, a.y - g.nIn.y * 6 * k);
+  ctx.moveTo(b0.x - g.nIn.x * 8 * k, b0.y - g.nIn.y * 8 * k); ctx.lineTo(b.x - g.nIn.x * 6 * k, b.y - g.nIn.y * 6 * k);
+  ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+  // traços de cota a 45°
+  const ux = (b.x - a.x) / comp, uy = (b.y - a.y) / comp, t = 6 * k;
+  const tx = (ux - g.nIn.x) * t * 0.7, ty = (uy - g.nIn.y) * t * 0.7;
+  ctx.lineWidth = 1.8 * k; ctx.beginPath();
+  ctx.moveTo(a.x - tx, a.y - ty); ctx.lineTo(a.x + tx, a.y + ty);
+  ctx.moveTo(b.x - tx, b.y - ty); ctx.lineTo(b.x + tx, b.y + ty); ctx.stroke();
+  const txt = (g.medido ? '' : '~') + fmtLen(g.L, false);
+  ctx.save();
+  ctx.translate((a.x + b.x) / 2, (a.y + b.y) / 2);
+  let ang = Math.atan2(uy, ux);
+  if (ang > Math.PI / 2) ang -= Math.PI; if (ang < -Math.PI / 2) ang += Math.PI;
+  ctx.rotate(ang);
+  fonte(ctx, 700, 16 * k);
+  const w = ctx.measureText(txt).width + 14 * k, hh = 24 * k;
+  ctx.beginPath(); ctx.roundRect ? ctx.roundRect(-w / 2, -hh / 2, w, hh, 3 * k) : ctx.rect(-w / 2, -hh / 2, w, hh);
+  if (g.medido) { ctx.fillStyle = COR.trena; ctx.fill(); ctx.strokeStyle = COR.grafite; ctx.lineWidth = 1.2 * k; ctx.stroke(); }
+  else { ctx.fillStyle = '#fff'; ctx.fill(); ctx.setLineDash([4 * k, 3 * k]); ctx.strokeStyle = COR.grafite2; ctx.lineWidth = 1.2 * k; ctx.stroke(); ctx.setLineDash([]); }
+  ctx.fillStyle = g.medido ? COR.grafite : COR.grafite2; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText(txt, 0, 1 * k);
+  // régua de trena na etiqueta medida
+  if (g.medido) {
+    ctx.strokeStyle = 'rgba(38,42,40,.55)'; ctx.lineWidth = 1 * k; ctx.beginPath();
+    for (let x = -w / 2 + 3 * k; x < w / 2 - 2 * k; x += 4 * k) { ctx.moveTo(x, -hh / 2); ctx.lineTo(x, -hh / 2 + 3 * k); }
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+function pontosPlanta(ctx, g, T, k) {
+  if (!g.w.pontos.length) return;
+  const c0 = g.esq === 0 ? g.p0 : g.p1;
+  const ux = g.esq === 0 ? g.dx : -g.dx, uy = g.esq === 0 ? g.dy : -g.dy;
+  const em = t => T({ x: c0.x + ux * t, y: c0.y + uy * t });
+  for (const p of g.w.pontos) {
+    const tp = PONTOS[p.tipo] || PONTOS.outro;
+    if (tp.box) {
+      const a = em(p.x || 0), b = em((p.x || 0) + (p.w || 0));
+      const off = (p.tipo === 'viga' ? 16 : 9) * k;
+      ctx.strokeStyle = tp.cor; ctx.lineWidth = (p.tipo === 'janela' || p.tipo === 'porta') ? 7 * k : 5 * k;
+      if (p.tipo === 'viga') ctx.setLineDash([8 * k, 5 * k]);
+      ctx.beginPath(); ctx.moveTo(a.x + g.nIn.x * off, a.y + g.nIn.y * off); ctx.lineTo(b.x + g.nIn.x * off, b.y + g.nIn.y * off); ctx.stroke();
+      ctx.setLineDash([]);
+    } else {
+      const q = em(p.x || 0), x = q.x + g.nIn.x * 12 * k, y = q.y + g.nIn.y * 12 * k;
+      ctx.beginPath(); ctx.arc(x, y, 8 * k, 0, 7); ctx.fillStyle = tp.cor; ctx.fill();
+      ctx.fillStyle = '#fff'; fonte(ctx, 800, 10 * k); ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(tp.c, x, y + .5);
+    }
+  }
+}
+
+/* ----- painel lateral da planta ----- */
+function campoMed(id, rot, val, dica, onv) {
+  return h('label', { class: 'f' }, h('span', {}, rot),
+    h('input', { class: 'i num', id, inputmode: 'decimal', autocomplete: 'off', value: toInput(val), placeholder: un(), 'data-seq': '1',
+      oninput: e => onv(parseLen(e.target.value)), onkeydown: proxCampo }),
+    dica ? h('small', {}, dica) : null);
+}
+function proxCampo(e) {
+  if (e.key !== 'Enter') return;
+  e.preventDefault();
+  const todos = [...document.querySelectorAll('[data-seq]')];
+  const i = todos.indexOf(e.target);
+  if (todos[i + 1]) todos[i + 1].focus(); else e.target.blur();
+}
+function preencherPainel(el, a) {
+  if (!el) return;
+  el.innerHTML = '';
+  if (S.sel?.tipo === 'parede' && a.planta.paredes[S.sel.i]) el.append(painelParede(a, S.sel.i));
+  else if (S.sel?.tipo === 'canto') el.append(painelCanto(a, S.sel.i));
+  else el.append(painelAmbiente(a));
+}
+function painelAmbiente(a) {
+  const P = a.planta, G = geo(a);
+  const pd = a.peDireito;
+  const resPd = h('div', { class: 'resultado', id: 'resPd' });
+  const attPd = () => {
+    const v = [pd.a, pd.b, pd.c].filter(x => x);
+    const vari = v.length >= 2 ? Math.max(...v) - Math.min(...v) : null;
+    resPd.className = 'resultado' + (vari != null && vari > cfg.tolerancia ? ' erro' : (v.length ? ' ok' : ''));
+    resPd.innerHTML = v.length ? `Pé-direito de projeto <b>${fmtLen(Math.min(...v))}</b>${vari != null ? `<br>variação de ${fmtLen(vari)}` : ''}` : 'Meça do piso ao teto em três pontos.';
+  };
+  attPd();
+  const wrap = h('div', {},
+    h('label', { class: 'f' }, h('span', {}, 'Nome do ambiente'),
+      h('input', { class: 'i', value: a.nome, oninput: e => { a.nome = e.target.value; salvar(); } })),
+    h('h3', {}, 'Pé-direito'),
+    h('div', { class: 'trio' },
+      campoMed('pd_a', 'Canto 1', pd.a, null, v => { pd.a = v; attPd(); salvar(); }),
+      campoMed('pd_b', 'Meio', pd.b, null, v => { pd.b = v; attPd(); salvar(); }),
+      campoMed('pd_c', 'Canto oposto', pd.c, null, v => { pd.c = v; attPd(); salvar(); })),
+    resPd,
+    h('h3', {}, 'Paredes'),
+    P.paredes.length ? G.walls.map(g => h('button', { class: 'lin', onclick: () => { S.sel = { tipo: 'parede', i: g.i }; preencherPainel($('#painel'), a); desenhar(); } },
+      h('span', { class: 'tag' + (g.medido ? ' m' : '') }, letra(g.i)),
+      h('span', {}, g.medido ? 'Medida' : 'Falta medir'),
+      h('span', { class: 'v' }, (g.medido ? '' : '~') + fmtLen(g.L)))) :
+      h('p', { class: 'muted' }, 'Desenhe o contorno com a caneta. Cada traço reto vira uma parede.'),
+    h('div', { class: 'row', style: 'margin-top:16px' },
+      (!P.fechado && P.paredes.length >= 2) ? h('button', { class: 'btn am sm', onclick: () => { empilharDesfazer(); fecharContorno(a, false); salvar(); preencherPainel($('#painel'), a); desenhar(); atualizaDica(); } }, 'Fechar contorno') : null,
+      (!P.fechado && P.paredes.length) ? h('button', { class: 'btn lite sm', onclick: () => { P.inverter = !P.inverter; salvar(); desenhar(); } }, 'Inverter lado de dentro') : null,
+      P.paredes.length ? h('button', { class: 'btn perigo sm', onclick: () => { if (!confirm('Apagar todo o desenho deste ambiente?')) return; empilharDesfazer(); a.planta = { origem: { x: 0, y: 0 }, fechado: false, inverter: false, paredes: [] }; a.cantos = {}; salvar(); preencherPainel($('#painel'), a); desenhar(); atualizaDica(); } }, 'Limpar desenho') : null),
+    h('h3', {}, 'Observações do ambiente'),
+    h('textarea', { class: 'i', value: a.obs, oninput: e => { a.obs = e.target.value; salvar(); } }));
+  return wrap;
+}
+function painelParede(a, i) {
+  const w = a.planta.paredes[i], n = a.planta.paredes.length;
+  const res = h('div', { class: 'resultado', id: 'resParede' });
+  const att = () => {
+    const m = medProjeto(w.med), v = variacao(w.med);
+    const ruim = v != null && v > cfg.tolerancia;
+    res.className = 'resultado' + (ruim ? ' erro' : (m ? ' ok' : ''));
+    if (!m) res.innerHTML = 'Digite pelo menos uma medida. O ideal são as três.';
+    else res.innerHTML = `Medida de projeto <b>${fmtLen(m)}</b><br>${v != null ? `Variação de ${fmtLen(v)}${ruim ? ': parede torta ou fora de prumo, projete pela menor.' : ', dentro da tolerância.'}` : 'Meça também as outras alturas para conferir.'}`;
+  };
+  att();
+  const mud = () => { att(); salvar(); desenhar(); atualizaDica(); };
+  const G = geo(a), g = G.walls[i];
+  const lista = h('div', {});
+  const attLista = () => {
+    lista.innerHTML = '';
+    if (!w.pontos.length) lista.append(h('p', { class: 'muted', style: 'margin:0' }, 'Nenhum ponto nesta parede.'));
+    w.pontos.forEach(p => {
+      const tp = PONTOS[p.tipo] || PONTOS.outro;
+      lista.append(h('button', { class: 'lin', onclick: () => dlgPonto(a, i, p) },
+        h('span', { class: 'tag', style: `background:${tp.cor};color:#fff;border-color:${tp.cor}` }, tp.c || tp.n[0]),
+        h('span', {}, tp.n),
+        h('span', { class: 'v', style: 'font-size:16px' }, `${fmtLen(p.x, false)} / ${fmtLen(p.y, false)}`)));
+    });
+  };
+  attLista();
+  painelParede.attLista = attLista;
+  return h('div', {},
+    h('div', { class: 'row' }, h('h2', {}, `Parede ${letra(i)}`), h('span', { class: 'sp' }),
+      h('button', { class: 'btn lite sm', onclick: () => { S.sel = null; preencherPainel($('#painel'), a); desenhar(); } }, 'Fechar')),
+    h('p', { class: 'hint' }, `Do canto ${g.vEsq + 1} ao canto ${g.vDir + 1}, olhando de dentro do ambiente. Meça de canto a canto em três alturas: o app usa a menor.`),
+    campoMed('m_base', 'Embaixo', w.med.base, 'A uns 10 cm do piso, logo acima do rodapé.', v => { w.med.base = v; mud(); }),
+    campoMed('m_meio', 'No meio', w.med.meio, 'Na altura da bancada ou do peito, perto de 1,2 m.', v => { w.med.meio = v; mud(); }),
+    campoMed('m_topo', 'Em cima', w.med.topo, 'A uns 10 cm do teto.', v => { w.med.topo = v; mud(); }),
+    res,
+    h('h3', {}, 'Pontos técnicos'),
+    lista,
+    h('div', { class: 'row', style: 'margin-top:10px' },
+      h('button', { class: 'btn am sm', onclick: () => dlgPonto(a, i, null) }, 'Adicionar ponto'),
+      h('button', { class: 'btn lite sm', onclick: () => { S.aba = 'vistas'; S.paredeVista = i; S.sel = null; render(); } }, 'Ver parede de frente')),
+    h('h3', {}, 'Prumo e rodapé'),
+    campoMed('m_prumo', 'Fora de prumo', w.prumo, 'Encoste o nível ou a régua de 2 m em pé na parede e meça a maior folga. Deixe vazio se estiver certo.', v => { w.prumo = v; salvar(); }),
+    h('div', { class: 'duo' },
+      campoMed('m_rh', 'Altura do rodapé', w.rodape.h, null, v => { w.rodape.h = v; salvar(); }),
+      campoMed('m_re', 'Espessura do rodapé', w.rodape.esp, null, v => { w.rodape.esp = v; salvar(); })),
+    h('h3', {}, 'Observações'),
+    h('textarea', { class: 'i', value: w.obs, placeholder: 'Ex.: parede com textura, cano aparente, tomada será mudada', oninput: e => { w.obs = e.target.value; salvar(); } }),
+    h('details', { style: 'margin-top:18px' },
+      h('summary', { style: 'min-height:44px;display:flex;align-items:center;font-weight:600' }, 'Ajustes do desenho'),
+      h('label', { class: 'f', style: 'margin-top:8px' }, h('span', {}, 'Direção no desenho (graus)'),
+        h('input', { class: 'i num', inputmode: 'numeric', value: String(w.ang), oninput: e => { const v = parseFloat(e.target.value); if (!isNaN(v)) { w.ang = ((v % 360) + 360) % 360; salvar(); desenhar(); } } }),
+        h('small', {}, '0 aponta para a direita, 90 para baixo. Só muda o desenho, não a medida.')),
+      i === n - 1 ? h('button', { class: 'btn perigo sm', onclick: () => { empilharDesfazer(); a.planta.paredes.pop(); a.planta.fechado = false; S.sel = null; salvar(); preencherPainel($('#painel'), a); desenhar(); atualizaDica(); } }, 'Apagar esta parede') : h('p', { class: 'hint' }, 'Para apagar, use Desfazer ou apague a partir da última parede.')));
+}
+function painelCanto(a, v) {
+  const G = geo(a), { ant, prox } = paredesDoCanto(a, v);
+  if (ant == null || prox == null) {
+    return h('div', {}, h('div', { class: 'row' }, h('h2', {}, `Canto ${v + 1}`), h('span', { class: 'sp' }),
+      h('button', { class: 'btn lite sm', onclick: () => { S.sel = null; preencherPainel($('#painel'), a); desenhar(); } }, 'Fechar')),
+      h('p', { class: 'muted' }, 'Este é uma ponta solta do desenho. O esquadro só é conferido onde duas paredes se encontram.'));
+  }
+  if (!a.cantos[v]) a.cantos[v] = { a: 600, b: 800, d: null };
+  const c = a.cantos[v];
+  const res = h('div', { class: 'resultado' });
+  const att = () => {
+    const e = calcEsquadro(a, v, geo(a));
+    if (!e) { res.className = 'resultado'; res.innerHTML = 'Digite a diagonal medida.'; return; }
+    if (e.invalido) { res.className = 'resultado erro'; res.innerHTML = 'Essas três medidas não fecham um triângulo. Confira as marcas.'; return; }
+    res.className = 'resultado' + (e.fora ? ' erro' : ' ok');
+    res.innerHTML = `Ângulo real <b>${e.ang.toFixed(1).replace('.', ',')}°</b><br>` + (e.fora
+      ? `Fora de esquadro: abre ${fmtLen(e.mm)} ao longo de ${fmtLen(e.Lmax)}. Preveja enchimento ou corte no móvel.`
+      : `Dentro da tolerância (${fmtLen(e.mm)} ao longo de ${fmtLen(e.Lmax)}).`);
+  };
+  att();
+  const mud = () => { att(); salvar(); desenhar(); };
+  const ideal = Math.round(Math.hypot(c.a || 0, c.b || 0));
+  return h('div', {},
+    h('div', { class: 'row' }, h('h2', {}, `Canto ${v + 1}`), h('span', { class: 'sp' }),
+      h('button', { class: 'btn lite sm', onclick: () => { S.sel = null; preencherPainel($('#painel'), a); desenhar(); } }, 'Fechar')),
+    h('p', { class: 'hint' }, `Entre a parede ${letra(ant)} e a parede ${letra(prox)}. Método 3-4-5: a partir do canto, marque 60 cm numa parede e 80 cm na outra. Se o canto estiver no esquadro, a diagonal entre as marcas dá 100 cm.`),
+    h('div', { class: 'duo' },
+      campoMed('e_a', `Marca na parede ${letra(ant)}`, c.a, null, x => { c.a = x; mud(); }),
+      campoMed('e_b', `Marca na parede ${letra(prox)}`, c.b, null, x => { c.b = x; mud(); })),
+    campoMed('e_d', 'Diagonal medida', c.d, `Se estiver no esquadro, dá ${fmtLen(ideal)}.`, x => { c.d = x; mud(); }),
+    res);
+}
+
+/* ----- diálogo de ponto técnico ----- */
+function dlgPonto(a, i, ponto, pre) {
+  const w = a.planta.paredes[i], G = geo(a), g = G.walls[i];
+  const novo = !ponto;
+  const p = ponto ? { ...ponto } : { id: uid(), tipo: 'tomada', x: null, y: null, w: null, h: null, obs: '' };
+  if (pre) { p.x = pre.x; p.y = pre.y; }
+  const dlg = $('#dlg'); dlg.innerHTML = '';
+  const campos = h('div', {});
+  const pdir = peDireitoProj(a) || 2600;
+  const montar = () => {
+    const tp = PONTOS[p.tipo];
+    campos.innerHTML = '';
+    if (novo && p._tipoAnt !== p.tipo) {
+      if (p.y == null || p._auto) { p.y = tp.y != null ? tp.y : (p.tipo === 'viga' ? pdir - 300 : 0); p._auto = true; }
+      if (tp.box) { p.w = tp.w ?? (p.tipo === 'viga' ? Math.round(g.L) : 300); p.h = tp.h ?? (p.tipo === 'pilar' ? pdir : 300); if (p.tipo === 'viga') p.x = p.x ?? 0; }
+      p._tipoAnt = p.tipo;
+    }
+    campos.append(
+      h('div', { class: 'duo' },
+        campoMed('p_x', tp.box ? 'Do canto esquerdo até a borda' : 'Do canto esquerdo até o centro', p.x, null, v => { p.x = v; }),
+        campoMed('p_y', tp.box ? 'Do piso até a base' : 'Do piso até o centro', p.y, null, v => { p.y = v; p._auto = false; })),
+      tp.box ? h('div', { class: 'duo' },
+        campoMed('p_w', 'Largura', p.w, null, v => { p.w = v; }),
+        campoMed('p_h', 'Altura', p.h, null, v => { p.h = v; })) : null,
+      h('label', { class: 'f' }, h('span', {}, 'Observação'), h('input', { class: 'i', value: p.obs, placeholder: 'Ex.: tomada 20 A, registro de gaveta', oninput: e => { p.obs = e.target.value; } })));
+  };
+  montar();
+  dlg.append(h('div', { class: 'dlg' },
+    h('h2', {}, novo ? `Novo ponto na parede ${letra(i)}` : `Ponto na parede ${letra(i)}`),
+    h('p', { class: 'hint', style: 'margin:-8px 0 14px' }, `Canto esquerdo é o canto ${g.vEsq + 1}, olhando a parede de dentro do ambiente.`),
+    h('label', { class: 'f' }, h('span', {}, 'Tipo'),
+      h('select', { class: 'i', onchange: e => { p.tipo = e.target.value; montar(); } },
+        Object.entries(PONTOS).map(([k, v]) => h('option', { value: k, selected: k === p.tipo }, v.n)))),
+    campos,
+    h('div', { class: 'row', style: 'margin-top:8px' },
+      !novo ? h('button', { class: 'btn perigo', onclick: () => { w.pontos = w.pontos.filter(x => x.id !== p.id); salvar(); dlg.close(); posPonto(a, i); } }, 'Excluir') : null,
+      h('span', { class: 'sp' }),
+      h('button', { class: 'btn lite', onclick: () => dlg.close() }, 'Cancelar'),
+      h('button', { class: 'btn pri', onclick: () => {
+        if (p.x == null) { toast('Digite a distância do canto esquerdo.'); return; }
+        const limpo = { id: p.id, tipo: p.tipo, x: p.x, y: p.y ?? 0, w: p.w, h: p.h, obs: p.obs };
+        const idx = w.pontos.findIndex(x => x.id === p.id);
+        if (idx >= 0) w.pontos[idx] = limpo; else w.pontos.push(limpo);
+        salvar(); dlg.close(); posPonto(a, i);
+      } }, 'Salvar ponto'))));
+  dlg.showModal();
+  setTimeout(() => $('#p_x')?.focus(), 80);
+}
+function posPonto(a, i) {
+  if (S.aba === 'vistas') { render(); return; }
+  painelParede.attLista && painelParede.attLista();
+  desenhar();
+}
+
+/* ===== aba vistas (parede de frente) ===== */
+function elevSVG(a, i, opt = {}) {
+  const G = geo(a), g = G.walls[i]; if (!g) return '';
+  const w = g.w, L = Math.max(g.L, 300), H = peDireitoProj(a) || 2600;
+  const fs = Math.max(L, H) / 34, m = fs * 5.2;
+  const vb = `${-m} ${-m * 0.9} ${L + m * 1.8} ${H + m * 2.2}`;
+  const Y = y => H - y;
+  const f = v => esc(fmtLen(v, false));
+  let s = `<svg xmlns="http://www.w3.org/2000/svg" class="${opt.cls || 'elev'}" viewBox="${vb}" font-family="Archivo, system-ui, sans-serif" font-stretch="condensed" data-l="${L}" data-h="${H}" data-m="${m}">`;
+  s += `<rect x="0" y="0" width="${L}" height="${H}" fill="#fff" stroke="#262A28" stroke-width="${fs * 0.22}"/>`;
+  if (w.rodape.h) s += `<rect x="0" y="${Y(w.rodape.h)}" width="${L}" height="${w.rodape.h}" fill="#E4E8E2" stroke="#9aa39c" stroke-width="${fs * 0.06}"/>`;
+  // linhas das três medidas
+  const niveis = [[100, w.med.base], [Math.min(1200, H / 2), w.med.meio], [H - 100, w.med.topo]];
+  for (const [yy, val] of niveis) {
+    s += `<line x1="0" x2="${L}" y1="${Y(yy)}" y2="${Y(yy)}" stroke="#C99A00" stroke-width="${fs * 0.08}" stroke-dasharray="${fs * 0.6} ${fs * 0.4}"/>`;
+    if (val) s += `<text x="${L - fs * 0.4}" y="${Y(yy) - fs * 0.35}" font-size="${fs * 0.8}" text-anchor="end" fill="#8a6a00">${f(val)}</text>`;
+  }
+  // pontos
+  for (const p of w.pontos) {
+    const tp = PONTOS[p.tipo] || PONTOS.outro;
+    if (tp.box) {
+      const x = p.x || 0, pw = p.w || 0, ph = p.h || 0, y = p.y || 0;
+      s += `<rect x="${x}" y="${Y(y + ph)}" width="${pw}" height="${ph}" fill="${tp.cor}" fill-opacity=".12" stroke="${tp.cor}" stroke-width="${fs * 0.14}" ${p.tipo === 'viga' ? `stroke-dasharray="${fs * 0.5} ${fs * 0.3}"` : ''}/>`;
+      s += `<text x="${x + pw / 2}" y="${Y(y + ph / 2)}" font-size="${fs * 0.9}" text-anchor="middle" dominant-baseline="middle" fill="${tp.cor}" font-weight="700">${esc(tp.n)}</text>`;
+      s += `<text x="${x + pw / 2}" y="${Y(y + ph / 2) + fs * 1.1}" font-size="${fs * 0.7}" text-anchor="middle" dominant-baseline="middle" fill="#5B635E">${f(pw)} × ${f(ph)}</text>`;
+      s += `<text x="${x + fs * 0.2}" y="${Y(y) - fs * 0.3}" font-size="${fs * 0.65}" fill="#5B635E">x ${f(x)}, piso ${f(y)}</text>`;
+    } else {
+      const x = p.x || 0, y = p.y || 0, r = fs * 0.75;
+      s += `<circle cx="${x}" cy="${Y(y)}" r="${r}" fill="${tp.cor}"/>`;
+      s += `<text x="${x}" y="${Y(y)}" font-size="${fs * 0.85}" text-anchor="middle" dominant-baseline="central" fill="#fff" font-weight="800">${tp.c}</text>`;
+      s += `<line x1="${x}" x2="${x}" y1="${Y(y) + r}" y2="${Y(0)}" stroke="${tp.cor}" stroke-width="${fs * 0.05}" stroke-dasharray="${fs * 0.25} ${fs * 0.25}"/>`;
+      s += `<text x="${x + r * 1.3}" y="${Y(y) - r * 0.2}" font-size="${fs * 0.7}" fill="#262A28">x ${f(x)}</text>`;
+      s += `<text x="${x + r * 1.3}" y="${Y(y) + r * 0.9}" font-size="${fs * 0.7}" fill="#5B635E">piso ${f(y)}</text>`;
+    }
+  }
+  // cotas gerais
+  const cy = H + m * 0.55;
+  s += `<line x1="0" x2="${L}" y1="${cy}" y2="${cy}" stroke="#262A28" stroke-width="${fs * 0.07}"/>`;
+  s += `<line x1="0" x2="0" y1="${H + fs * 0.4}" y2="${cy + fs * 0.4}" stroke="#262A28" stroke-width="${fs * 0.07}"/><line x1="${L}" x2="${L}" y1="${H + fs * 0.4}" y2="${cy + fs * 0.4}" stroke="#262A28" stroke-width="${fs * 0.07}"/>`;
+  const tw = fs * 4.4;
+  s += `<rect x="${L / 2 - tw / 2}" y="${cy - fs * 0.7}" width="${tw}" height="${fs * 1.4}" rx="${fs * 0.15}" fill="${g.medido ? '#F4C20D' : '#fff'}" stroke="#262A28" stroke-width="${fs * 0.06}"/>`;
+  s += `<text x="${L / 2}" y="${cy}" font-size="${fs}" font-weight="700" text-anchor="middle" dominant-baseline="central" fill="#262A28">${g.medido ? '' : '~'}${f(g.L)}</text>`;
+  const cx = -m * 0.5;
+  s += `<line x1="${cx}" x2="${cx}" y1="0" y2="${H}" stroke="#262A28" stroke-width="${fs * 0.07}"/>`;
+  s += `<text x="${cx - fs * 0.3}" y="${H / 2}" font-size="${fs}" font-weight="700" text-anchor="middle" transform="rotate(-90 ${cx - fs * 0.3} ${H / 2})" fill="#262A28">${peDireitoProj(a) ? '' : '~'}${f(H)}</text>`;
+  s += `<text x="0" y="${-fs * 0.6}" font-size="${fs * 0.85}" font-weight="700" fill="#262A28">Canto ${g.vEsq + 1}</text>`;
+  s += `<text x="${L}" y="${-fs * 0.6}" font-size="${fs * 0.85}" font-weight="700" text-anchor="end" fill="#262A28">Canto ${g.vDir + 1}</text>`;
+  s += `</svg>`;
+  return s;
+}
+function abaVistas(a) {
+  const P = a.planta;
+  if (!P.paredes.length) {
+    return h('div', { class: 'work cheio' }, h('div', { class: 'conteudo' }, h('div', { class: 'vazio' }, 'Desenhe as paredes na aba Planta para ver cada uma de frente.')));
+  }
+  if (S.paredeVista >= P.paredes.length) S.paredeVista = 0;
+  const i = S.paredeVista;
+  const wrap = h('div', { class: 'elev-wrap', html: elevSVG(a, i) });
+  const chips = h('div', { class: 'elev-chips chips' }, P.paredes.map((w, j) =>
+    h('button', { class: 'chip' + (j === i ? ' on' : ''), onclick: () => { S.paredeVista = j; render(); } }, `Parede ${letra(j)}`)));
+  const palco = h('div', { class: 'palco' }, wrap, chips);
+  const svg = wrap.querySelector('svg');
+  svg.addEventListener('click', e => {
+    const pt = svg.createSVGPoint(); pt.x = e.clientX; pt.y = e.clientY;
+    const q = pt.matrixTransform(svg.getScreenCTM().inverse());
+    const L = +svg.dataset.l, H = +svg.dataset.h;
+    if (q.x < 0 || q.x > L || q.y < 0 || q.y > H) return;
+    dlgPonto(a, i, null, { x: r10(q.x), y: r10(H - q.y) });
+  });
+  const w = P.paredes[i];
+  const painel = h('div', { class: 'painel' },
+    h('h2', {}, `Parede ${letra(i)} de frente`),
+    h('p', { class: 'hint' }, 'Toque na parede, com a caneta ou o dedo, onde fica uma tomada, janela ou cano. O app sugere a posição e você corrige com a medida da trena.'),
+    h('h3', {}, 'Pontos técnicos'),
+    w.pontos.length ? w.pontos.map(p => {
+      const tp = PONTOS[p.tipo] || PONTOS.outro;
+      return h('button', { class: 'lin', onclick: () => dlgPonto(a, i, p) },
+        h('span', { class: 'tag', style: `background:${tp.cor};color:#fff;border-color:${tp.cor}` }, tp.c || tp.n[0]),
+        h('span', {}, tp.n, p.obs ? h('small', { class: 'muted', style: 'display:block;font-size:13px' }, p.obs) : null),
+        h('span', { class: 'v', style: 'font-size:16px' }, `${fmtLen(p.x, false)} / ${fmtLen(p.y, false)}`));
+    }) : h('p', { class: 'muted' }, 'Nenhum ponto ainda.'),
+    h('div', { class: 'row', style: 'margin-top:12px' },
+      h('button', { class: 'btn am sm', onclick: () => dlgPonto(a, i, null) }, 'Adicionar ponto'),
+      h('button', { class: 'btn lite sm', onclick: () => { S.aba = 'planta'; S.sel = { tipo: 'parede', i }; render(); } }, 'Medidas da parede')),
+    h('p', { class: 'hint', style: 'margin-top:18px' }, 'Os números mostram a distância do canto esquerdo (x) e a altura do piso.'));
+  return h('div', { class: 'work' }, palco, painel);
+}
+
+/* ===== aba checklist ===== */
+function abaChecklist(a) {
+  const grupos = checklistDe(a);
+  const tot = grupos.reduce((s, g) => s + g[1].length, 0);
+  const cont = h('span', {});
+  const att = () => { const f = Object.values(a.checklist).filter(Boolean).length; cont.textContent = `${f} de ${tot} conferidos`; };
+  att();
+  const inner = h('div', { class: 'inner' },
+    h('div', { class: 'row', style: 'margin-bottom:6px' }, h('h2', { style: 'font-size:26px;font-weight:800;font-stretch:85%' }, `Checklist: ${a.nome}`), h('span', { class: 'sp' }), h('span', { class: 'muted' }, cont)),
+    h('p', { class: 'hint', style: 'margin-bottom:10px' }, 'Antes de sair da casa do cliente, confira item por item. O que ficar pendente aparece no Resumo e no PDF.'),
+    grupos.map(([tit, itens]) => h('div', { class: 'secao', style: 'margin-top:22px' },
+      h('h3', { style: 'font-size:18px;margin-bottom:4px' }, tit),
+      itens.map(t => {
+        const lab = h('label', { class: 'check' + (a.checklist[t] ? ' ok' : '') },
+          h('input', { type: 'checkbox', checked: !!a.checklist[t], onchange: e => { a.checklist[t] = e.target.checked; lab.classList.toggle('ok', e.target.checked); att(); salvar(); } }),
+          h('span', {}, t));
+        return lab;
+      }))));
+  return h('div', { class: 'work cheio' }, h('div', { class: 'conteudo' }, inner));
+}
+
+/* ===== aba fotos ===== */
+function urlFoto(f) {
+  if (!S.urls.has(f.id)) S.urls.set(f.id, URL.createObjectURL(f.blob));
+  return S.urls.get(f.id);
+}
+async function comprimir(file) {
+  const img = await new Promise((res, rej) => { const im = new Image(); im.onload = () => res(im); im.onerror = rej; im.src = URL.createObjectURL(file); });
+  const max = 1600, k = Math.min(1, max / Math.max(img.naturalWidth, img.naturalHeight));
+  const c = document.createElement('canvas'); c.width = Math.round(img.naturalWidth * k); c.height = Math.round(img.naturalHeight * k);
+  c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+  URL.revokeObjectURL(img.src);
+  return new Promise(res => c.toBlob(res, 'image/jpeg', 0.72));
+}
+function abaFotos(a) {
+  const minhas = S.fotos.filter(f => f.ambienteId === a.id).sort((x, y) => x.criadoEm - y.criadoEm);
+  const receber = async files => {
+    for (const file of files) {
+      const blob = await comprimir(file);
+      const f = { id: uid(), projetoId: S.projeto.id, ambienteId: a.id, paredeId: S.fotoParede || null, legenda: '', blob, criadoEm: Date.now() };
+      await DB.put('fotos', f); S.fotos.push(f);
+    }
+    toast(files.length > 1 ? `${files.length} fotos salvas.` : 'Foto salva.');
+    render();
+  };
+  $('#arqFoto').onchange = e => { if (e.target.files.length) receber([...e.target.files]); e.target.value = ''; };
+  $('#arqGaleria').onchange = e => { if (e.target.files.length) receber([...e.target.files]); e.target.value = ''; };
+  const paredes = a.planta.paredes;
+  const inner = h('div', { class: 'inner' },
+    h('h2', { style: 'font-size:26px;font-weight:800;font-stretch:85%;margin-bottom:6px' }, `Fotos: ${a.nome}`),
+    h('p', { class: 'hint', style: 'margin-bottom:14px' }, 'Fotografe cada parede de frente e os pontos críticos: registros, quadros, cantos tortos. Escolha a parede antes de fotografar.'),
+    paredes.length ? h('div', { class: 'chips', style: 'margin-bottom:12px' },
+      h('button', { class: 'chip' + (!S.fotoParede ? ' on' : ''), onclick: () => { S.fotoParede = null; render(); } }, 'Ambiente geral'),
+      paredes.map((w, j) => h('button', { class: 'chip' + (S.fotoParede === w.id ? ' on' : ''), onclick: () => { S.fotoParede = w.id; render(); } }, `Parede ${letra(j)}`))) : null,
+    h('div', { class: 'row', style: 'margin-bottom:18px' },
+      h('button', { class: 'btn am', onclick: () => $('#arqFoto').click() }, 'Tirar foto'),
+      h('button', { class: 'btn lite', onclick: () => $('#arqGaleria').click() }, 'Escolher da galeria')),
+    minhas.length ? h('div', { class: 'fotos' }, minhas.map(f => {
+      const pi = paredes.findIndex(w => w.id === f.paredeId);
+      return h('button', { class: 'foto', onclick: () => dlgFoto(a, f) },
+        h('img', { src: urlFoto(f), alt: f.legenda || 'Foto do ambiente', loading: 'lazy' }),
+        h('div', {}, h('b', {}, pi >= 0 ? `Parede ${letra(pi)}` : 'Geral'), f.legenda ? ` ${f.legenda}` : ''));
+    })) : h('div', { class: 'vazio' }, 'Nenhuma foto neste ambiente.'));
+  return h('div', { class: 'work cheio' }, h('div', { class: 'conteudo' }, inner));
+}
+function dlgFoto(a, f) {
+  const dlg = $('#dlg'); dlg.innerHTML = '';
+  const paredes = a.planta.paredes;
+  dlg.append(h('div', { class: 'dlg' },
+    h('img', { src: urlFoto(f), style: 'width:100%;border-radius:10px;margin-bottom:14px', alt: '' }),
+    h('label', { class: 'f' }, h('span', {}, 'Legenda'), h('input', { class: 'i', value: f.legenda, placeholder: 'Ex.: registro atrás da geladeira', oninput: e => { f.legenda = e.target.value; } })),
+    h('label', { class: 'f' }, h('span', {}, 'Parede'),
+      h('select', { class: 'i', onchange: e => { f.paredeId = e.target.value || null; } },
+        h('option', { value: '' }, 'Ambiente geral'),
+        paredes.map((w, j) => h('option', { value: w.id, selected: w.id === f.paredeId }, `Parede ${letra(j)}`)))),
+    h('div', { class: 'row' },
+      h('button', { class: 'btn perigo', onclick: async () => { if (!confirm('Excluir esta foto?')) return; await DB.del('fotos', f.id); S.fotos = S.fotos.filter(x => x.id !== f.id); dlg.close(); render(); } }, 'Excluir'),
+      h('span', { class: 'sp' }),
+      h('button', { class: 'btn pri', onclick: async () => { await DB.put('fotos', f); dlg.close(); render(); } }, 'Salvar'))));
+  dlg.showModal();
+}
+
+/* ===== aba resumo ===== */
+function abaResumo(a) {
+  const A = alertas(a), G = geo(a), P = a.planta;
+  const erros = A.filter(x => x.n === 'erro'), avisos = A.filter(x => x.n === 'av');
+  const med = G.walls.filter(g => g.medido).length;
+  const fotos = S.fotos.filter(f => f.ambienteId === a.id).length;
+  const ir = ref => {
+    if (!ref) return;
+    if (ref.tipo === 'aba') { S.aba = ref.aba; render(); return; }
+    S.aba = 'planta'; S.sel = ref.tipo === 'amb' ? null : ref; render();
+  };
+  const linha = (al) => h('button', { class: 'alerta' + (al.n === 'erro' ? ' erro' : ''), onclick: () => ir(al.ref) },
+    h('span', { class: 'ic' }, al.n === 'erro' ? '!' : 'i'), h('span', {}, al.t));
+  const inner = h('div', { class: 'inner' },
+    h('h2', { style: 'font-size:26px;font-weight:800;font-stretch:85%;margin-bottom:14px' }, `Resumo: ${a.nome}`),
+    h('div', { class: 'cardgrid', style: 'margin-bottom:22px' },
+      [[`${med} de ${P.paredes.length}`, 'paredes medidas'], [peDireitoProj(a) ? fmtLen(peDireitoProj(a)) : '—', 'pé-direito'], [String(fotos), fotos === 1 ? 'foto' : 'fotos'], [`${Math.round(progresso(a) * 100)}%`, 'concluído']]
+        .map(([v, r]) => h('div', { class: 'amb', style: 'min-height:auto' }, h('b', { class: 'num', style: 'font-size:30px' }, v), h('span', { class: 'muted' }, r)))),
+    erros.length ? h('div', {}, h('h3', { style: 'font-size:18px;margin-bottom:8px' }, 'Precisa de atenção'), erros.map(linha)) : h('div', { class: 'resultado ok' }, 'Nenhuma medida fora da tolerância.'),
+    avisos.length ? h('div', { style: 'margin-top:18px' }, h('h3', { style: 'font-size:18px;margin-bottom:8px' }, 'Pendências'), avisos.map(linha)) : null,
+    h('div', { class: 'row', style: 'margin-top:22px' },
+      h('button', { class: 'btn pri', onclick: () => gerarPDF(S.projeto, [a.id]) }, 'Gerar PDF técnico deste ambiente'),
+      h('button', { class: 'btn lite', onclick: () => gerarPDF(S.projeto, S.projeto.ambientes.map(x => x.id)) }, 'PDF de todos os ambientes')),
+    h('p', { class: 'hint' }, `Tolerância atual: ${fmtLen(cfg.tolerancia)}. Mude em Configurações, na tela inicial.`));
+  return h('div', { class: 'work cheio' }, h('div', { class: 'conteudo' }, inner));
+}
+
+/* ---------- PDF técnico ---------- */
+function plantaPNG(a) {
+  const W = 1600, H = 1050, c = document.createElement('canvas'); c.width = W; c.height = H;
+  const ctx = c.getContext('2d'), G = geo(a);
+  let v = { s: 0.2, ox: W / 2, oy: H / 2 };
+  if (a.planta.paredes.length) {
+    const xs = G.pts.map(p => p.x), ys = G.pts.map(p => p.y);
+    const x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys), pad = 170;
+    const s = Math.min((W - pad * 2) / Math.max(x1 - x0, 500), (H - pad * 2) / Math.max(y1 - y0, 500));
+    v = { s, ox: W / 2 - (x0 + x1) / 2 * s, oy: H / 2 - (y0 + y1) / 2 * s };
+  }
+  desenharPlanta(ctx, a, W, H, v, { print: true, k: 1.7 });
+  return c.toDataURL('image/png');
+}
+async function gerarPDF(p, ids) {
+  const root = $('#print'); root.innerHTML = '';
+  const c = p.cliente;
+  const cab = () => `<div class="cab"><div><h1>Levantamento técnico</h1><div>${esc(c.nome || 'Cliente')}${c.endereco ? ', ' + esc(c.endereco) : ''}</div><div>${c.telefone ? esc(c.telefone) + ', ' : ''}${dataBR(Date.now())}</div></div><div class="emp"><b>${esc(cfg.empresa || '')}</b><br>${esc(cfg.responsavel || '')}${cfg.telefone ? '<br>' + esc(cfg.telefone) : ''}</div></div>`;
+  const fotosTodas = await DB.fotosDe(p.id);
+  let html = '';
+  for (const id of ids) {
+    const a = p.ambientes.find(x => x.id === id); if (!a) continue;
+    const G = geo(a), A = alertas(a);
+    html += `<section class="pg">${cab()}<h2>${esc(a.nome)}</h2>`;
+    const pd = a.peDireito;
+    html += `<p>Pé-direito: ${fmtLen(pd.a)}, ${fmtLen(pd.b)}, ${fmtLen(pd.c)}. <b>Projeto: ${fmtLen(peDireitoProj(a))}</b>. Unidade: ${un()}. Tolerância: ${fmtLen(cfg.tolerancia)}.</p>`;
+    html += `<img class="planta" src="${plantaPNG(a)}" alt="Planta">`;
+    html += `<p style="font-size:9pt;color:#555">Cotas em fundo amarelo foram medidas. Cotas com ~ são estimadas pelo croqui e precisam ser conferidas.</p>`;
+    if (G.walls.length) {
+      html += `<div class="bloco"><h3>Paredes</h3><table><tr><th>Parede</th><th>Cantos</th><th>Embaixo</th><th>Meio</th><th>Em cima</th><th>Projeto</th><th>Variação</th><th>Prumo</th><th>Rodapé (alt. × esp.)</th></tr>`;
+      for (const g of G.walls) {
+        const w = g.w, v = variacao(w.med);
+        html += `<tr><td><b>${letra(g.i)}</b></td><td>${g.vEsq + 1} a ${g.vDir + 1}</td><td class="n">${fmtLen(w.med.base, false)}</td><td class="n">${fmtLen(w.med.meio, false)}</td><td class="n">${fmtLen(w.med.topo, false)}</td><td class="n"><b>${g.medido ? fmtLen(g.L, false) : '~' + fmtLen(g.L, false)}</b></td><td class="n">${fmtLen(v, false)}</td><td class="n">${fmtLen(w.prumo, false)}</td><td class="n">${fmtLen(w.rodape.h, false)} × ${fmtLen(w.rodape.esp, false)}</td></tr>`;
+      }
+      html += `</table></div>`;
+      let cantos = '';
+      for (let v = 0; v < G.nV; v++) {
+        const { ant, prox } = paredesDoCanto(a, v); if (ant == null || prox == null) continue;
+        const e = calcEsquadro(a, v, G);
+        let st = 'Não conferido', ang = '—';
+        if (e && e.invalido) st = 'Medidas inválidas';
+        else if (e) { ang = e.ang.toFixed(1).replace('.', ',') + '°'; st = e.fora ? `Fora: ${fmtLen(e.mm)} em ${fmtLen(e.Lmax)}` : 'OK'; }
+        cantos += `<tr><td><b>${v + 1}</b></td><td>${letra(ant)} e ${letra(prox)}</td><td class="n">${ang}</td><td>${st}</td></tr>`;
+      }
+      if (cantos) html += `<div class="bloco"><h3>Esquadro dos cantos</h3><table><tr><th>Canto</th><th>Paredes</th><th>Ângulo</th><th>Situação</th></tr>${cantos}</table></div>`;
+    }
+    if (A.length) html += `<div class="bloco"><h3>Pontos de atenção e pendências</h3>${A.map(x => `<div class="al ${x.n === 'erro' ? '' : 'av'}">${esc(x.t)}</div>`).join('')}</div>`;
+    if (a.obs) html += `<div class="bloco"><h3>Observações</h3><p>${esc(a.obs).replace(/\n/g, '<br>')}</p></div>`;
+    // vistas
+    for (const g of G.walls) {
+      const w = g.w;
+      html += `<div class="bloco"><h3>Parede ${letra(g.i)} de frente</h3>${elevSVG(a, g.i, { cls: 'elevp' })}`;
+      if (w.pontos.length) {
+        html += `<table><tr><th>Ponto</th><th>Do canto ${g.vEsq + 1}</th><th>Do piso</th><th>Largura × altura</th><th>Obs.</th></tr>`;
+        for (const pt of w.pontos) {
+          const tp = PONTOS[pt.tipo] || PONTOS.outro;
+          html += `<tr><td>${esc(tp.n)}</td><td class="n">${fmtLen(pt.x, false)}</td><td class="n">${fmtLen(pt.y, false)}</td><td class="n">${tp.box ? fmtLen(pt.w, false) + ' × ' + fmtLen(pt.h, false) : '—'}</td><td>${esc(pt.obs)}</td></tr>`;
+        }
+        html += `</table>`;
+      }
+      if (w.obs) html += `<p><b>Obs.:</b> ${esc(w.obs)}</p>`;
+      html += `</div>`;
+    }
+    // checklist
+    const grupos = checklistDe(a);
+    html += `<div class="bloco"><h3>Checklist</h3><table><tr><th>Item</th><th style="width:22%">Situação</th></tr>`;
+    for (const [tit, itens] of grupos) {
+      html += `<tr><th colspan="2">${esc(tit)}</th></tr>`;
+      for (const t of itens) html += `<tr><td>${esc(t)}</td><td>${a.checklist[t] ? 'Conferido' : '<b>Pendente</b>'}</td></tr>`;
+    }
+    html += `</table></div>`;
+    const fs = fotosTodas.filter(f => f.ambienteId === a.id);
+    if (fs.length) {
+      html += `<h3>Fotos</h3><div class="fg">`;
+      for (const f of fs) {
+        const pi = a.planta.paredes.findIndex(w => w.id === f.paredeId);
+        html += `<figure><img src="${urlFoto(f)}" alt=""><figcaption>${pi >= 0 ? 'Parede ' + letra(pi) : 'Geral'}${f.legenda ? ': ' + esc(f.legenda) : ''}</figcaption></figure>`;
+      }
+      html += `</div>`;
+    }
+    html += `</section>`;
+  }
+  root.innerHTML = html;
+  await Promise.all([...root.querySelectorAll('img')].map(im => im.decode ? im.decode().catch(() => {}) : Promise.resolve()));
+  const tituloAnt = document.title;
+  const nomeAmb = ids.length === 1 ? ' - ' + (p.ambientes.find(x => x.id === ids[0])?.nome || '') : '';
+  document.title = `Levantamento - ${c.nome || 'cliente'}${nomeAmb} - ${new Date().toLocaleDateString('pt-BR').replace(/\//g, '-')}`;
+  const volta = () => { document.title = tituloAnt; window.removeEventListener('afterprint', volta); };
+  window.addEventListener('afterprint', volta);
+  setTimeout(() => window.print(), 120);
+}
+
+/* ---------- configurações ---------- */
+function dlgConfig() {
+  const dlg = $('#dlg'); dlg.innerHTML = '';
+  const tmp = { ...cfg };
+  dlg.append(h('div', { class: 'dlg' },
+    h('h2', {}, 'Configurações'),
+    h('label', { class: 'f' }, h('span', {}, 'Nome da empresa'), h('input', { class: 'i', value: tmp.empresa, oninput: e => tmp.empresa = e.target.value }), h('small', {}, 'Sai no cabeçalho do PDF.')),
+    h('div', { class: 'duo' },
+      h('label', { class: 'f' }, h('span', {}, 'Seu nome'), h('input', { class: 'i', value: tmp.responsavel, oninput: e => tmp.responsavel = e.target.value })),
+      h('label', { class: 'f' }, h('span', {}, 'Telefone'), h('input', { class: 'i', type: 'tel', value: tmp.telefone, oninput: e => tmp.telefone = e.target.value }))),
+    h('div', { class: 'duo' },
+      h('label', { class: 'f' }, h('span', {}, 'Unidade das medidas'),
+        h('select', { class: 'i', onchange: e => tmp.unidade = e.target.value },
+          h('option', { value: 'mm', selected: tmp.unidade === 'mm' }, 'Milímetros (mm)'),
+          h('option', { value: 'cm', selected: tmp.unidade === 'cm' }, 'Centímetros (cm)'))),
+      h('label', { class: 'f' }, h('span', {}, 'Tolerância (mm)'),
+        h('input', { class: 'i num', inputmode: 'numeric', value: String(tmp.tolerancia), oninput: e => { const v = parseFloat(e.target.value.replace(',', '.')); if (!isNaN(v) && v > 0) tmp.tolerancia = v; } }),
+        h('small', {}, 'Diferença acima disso vira alerta. 5 mm é um bom começo.'))),
+    h('label', { class: 'check', style: 'border:0' },
+      h('input', { type: 'checkbox', checked: tmp.dedoDesenha, onchange: e => tmp.dedoDesenha = e.target.checked }),
+      h('span', {}, 'Desenhar também com o dedo (sem caneta, dois dedos movem a tela)')),
+    h('p', { class: 'hint' }, `Esquadro ${VERSAO}`),
+    h('div', { class: 'row', style: 'margin-top:10px' }, h('span', { class: 'sp' }),
+      h('button', { class: 'btn lite', onclick: () => dlg.close() }, 'Cancelar'),
+      h('button', { class: 'btn pri', onclick: async () => { Object.assign(cfg, tmp); await DB.put('config', { k: 'cfg', v: { ...cfg } }); dlg.close(); toast('Configurações salvas.'); render(); } }, 'Salvar'))));
+  dlg.showModal();
+}
+
+/* ---------- backup ---------- */
+const blobParaB64 = b => new Promise(res => { const r = new FileReader(); r.onload = () => res(r.result); r.readAsDataURL(b); });
+async function b64ParaBlob(d) { return (await fetch(d)).blob(); }
+async function exportar() {
+  const projetos = await DB.all('projetos'), fotos = await DB.all('fotos');
+  const fs = [];
+  for (const f of fotos) { const { blob, ...meta } = f; fs.push({ ...meta, data: await blobParaB64(blob) }); }
+  const dados = { app: 'esquadro', versao: 1, exportadoEm: Date.now(), config: { ...cfg }, projetos, fotos: fs };
+  const url = URL.createObjectURL(new Blob([JSON.stringify(dados)], { type: 'application/json' }));
+  const a = h('a', { href: url, download: `esquadro-backup-${new Date().toISOString().slice(0, 10)}.json` });
+  document.body.append(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 5000);
+  toast('Backup baixado. Guarde no Drive ou mande para você mesmo.');
+}
+async function importar(file) {
+  try {
+    const d = JSON.parse(await file.text());
+    if (d.app !== 'esquadro') throw new Error('arquivo');
+    for (const p of d.projetos || []) await DB.put('projetos', p);
+    for (const f of d.fotos || []) { const { data, ...meta } = f; await DB.put('fotos', { ...meta, blob: await b64ParaBlob(data) }); }
+    toast(`${(d.projetos || []).length} clientes restaurados.`);
+    irHome();
+  } catch (e) { toast('Esse arquivo não é um backup do Esquadro.'); }
+}
+function dlgBackup() {
+  const dlg = $('#dlg'); dlg.innerHTML = '';
+  $('#arqBackup').onchange = e => { const f = e.target.files[0]; e.target.value = ''; if (f) { dlg.close(); importar(f); } };
+  dlg.append(h('div', { class: 'dlg' },
+    h('h2', {}, 'Backup'),
+    h('p', {}, 'Os dados ficam só no tablet. Se o app for desinstalado ou o navegador limpar os dados, tudo se perde. Exporte um backup no fim de cada visita.'),
+    h('div', { class: 'row', style: 'margin-top:16px' },
+      h('button', { class: 'btn pri', onclick: () => { dlg.close(); exportar(); } }, 'Exportar backup'),
+      h('button', { class: 'btn lite', onclick: () => $('#arqBackup').click() }, 'Restaurar backup'),
+      h('span', { class: 'sp' }),
+      h('button', { class: 'btn lite', onclick: () => dlg.close() }, 'Fechar')),
+    h('p', { class: 'hint', style: 'margin-top:12px' }, 'Restaurar junta o backup com o que já está no tablet. Clientes com o mesmo código são substituídos.')));
+  dlg.showModal();
+}
+
+/* ---------- início ---------- */
+(async function iniciar() {
+  await DB.abrir();
+  try { const c = await DB.get('config', 'cfg'); if (c) Object.assign(cfg, c.v); } catch (e) {}
+  if (DB.ok && navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
+  if ('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js').catch(() => {});
+  if (document.fonts) document.fonts.ready.then(() => desenhar());
+  irHome();
+})();
+</script>
+</body>
+</html>
