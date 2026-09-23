@@ -14,15 +14,17 @@ App para medir ambientes na casa do cliente com o tablet e a S Pen. Funciona sem
 3. Abra pelo ícone. A partir daí funciona offline.
 
 ## Uso rápido
-- **Caneta desenha, dedo move e dá zoom** (dois dedos = zoom). Botão lateral da S Pen também move a tela.
-- Desenhe o contorno do cômodo; termine perto do primeiro canto para fechar.
-- Toque na parede para digitar as 3 medidas (embaixo, meio, em cima). O app usa a menor.
-- Toque no canto para conferir o esquadro pelo método 3-4-5 (60, 80 e diagonal de 100 cm).
-- Aba Vistas: toque na parede para marcar tomada, janela, cano etc.
-- Aba Resumo: alertas e o botão do PDF técnico (imprimir > Salvar como PDF).
+- **Caneta desenha, dedo move a tela, dois dedos dão zoom.** Segurando o botão da S Pen, a caneta também move a tela.
+- **Parede:** toque ponto a ponto (ou arraste cada trecho). Toque no primeiro ponto (amarelo) para fechar o cômodo e dê o nome no painel. A área aparece sozinha.
+- **Comprimento exato:** enquanto desenha, digite o comprimento na barra de baixo e toque em Aplicar. Depois, dá para mudar cada trecho no painel.
+- **Móveis:** Retângulo e Elipse. Arraste de um canto ao outro, ou toque uma vez para criar uma peça de 60 × 60 cm. Largura, profundidade e ângulo podem ser digitados no painel.
+- **Editar:** com Selecionar, os quadradinhos mudam o tamanho, a bolinha amarela gira e a bolinha preta no meio de um trecho faz curva (um toque nela cria um ponto). Toque duas vezes num ponto para apagá-lo.
+- **Cores por categoria:** Parede, Móvel, Porta/janela, Eletro, Elétrica, Hidráulica, Observação e Medida. Além disso, qualquer cor, preenchimento, transparência, espessura e tipo de linha.
+- **Grade, Ímã e 90°** ficam na barra de cima.
+- **Exportar:** imagem PNG (para o WhatsApp) ou PDF em escala (1:20, 1:25, 1:50...).
 
 ## Importante: backup
-Os dados ficam só no tablet. Use **Backup > Exportar** no fim de cada visita e guarde o arquivo no Drive.
+Os desenhos ficam só no tablet. Use **Backup > Exportar todos** de vez em quando e guarde o arquivo no Drive.
 
 ## Atualizar o app
 Use o `publicar.sh` (veja PUBLICAR.md). Ele sobe a versão no app e no cache offline, confere se o código não tem erro de sintaxe e envia para o GitHub:
