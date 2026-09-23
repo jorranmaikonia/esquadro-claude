@@ -167,7 +167,7 @@ label.f>span{display:block;font-size:13px;color:var(--grafite2);margin-bottom:4p
    Esquadro — editor de desenho para móveis planejados
    Unidade interna: centímetros. Tela: px = cm * s + o
    ========================================================= */
-const VERSAO = '2.2.0';
+const VERSAO = '2.3.0';
 
 /* ---------- utilidades ---------- */
 const $ = (s, r = document) => r.querySelector(s);
@@ -278,7 +278,7 @@ const NOME_FERR = Object.fromEntries(FERR.filter(Boolean).map(f => [f[0], f[1]])
 const S = {
   tela: 'lista', lista: [], doc: null, ferr: 'sel', sel: [], painel: true,
   undo: [], redo: [], base: null, poli: null, trava: false, forma: 'triangulo', colocar: null, estudio: null,
-  galeria: false, galCat: 'Cozinha', galBusca: '', galVer: null, bibUser: [], folha: 0,
+  galeria: false, galCat: 'Cozinha', galBusca: '', galVer: 'cima', bibUser: [], folha: 0,
   padrao: {
     parede: estiloCat('parede'), linha: { ...estiloCat('medida'), esp: 2 }, livre: { ...estiloCat('obs'), linha: 'solida' },
     ret: estiloCat('movel'), elipse: estiloCat('movel'), formas: estiloCat('movel'), texto: estiloCat('medida'), cota: estiloCat('medida')
@@ -778,7 +778,7 @@ function moverAcao(e, p) {
     A.enc = null;
     if (A.objs.length === 1) {
       const o = A.objs[0];
-      if (folhaAtual().tipo === 'planta') { if (ENCOSTA.has(o.tipo)) A.enc = encostar(o); if (!A.enc) grudar(o); else grudar(o, o.rot % 180 ? 'y' : 'x'); } // encosta na parede e na vizinha
+      if (folhaAtual().tipo === 'planta') { if (ENCOSTA.has(o.tipo) && !o.deFrente) A.enc = encostar(o); if (!A.enc) grudar(o); else grudar(o, o.rot % 180 ? 'y' : 'x'); } // encosta na parede e na vizinha
       else grudar(o);                                                                                          // vistas: gruda nas vizinhas
     }
     desenhar(); return;
@@ -937,7 +937,9 @@ function barraPoli() {
   atualizaDica(); montarFormas();
   if (S.colocar) {
     const it = S.colocar.item;
-    ap(el, h('span', { style: 'font-weight:700;padding:0 8px' }, `${it.nome} · ${fmt(it.w0)} × ${fmt(it.h0)}`),
+    const fr = S.galVer === 'frente';
+    ap(el, h('span', { style: 'font-weight:700;padding:0 8px' }, `${it.nome} · ${fmt(it.w0)} × ${fmt(fr ? frenteDe(it).h0 : it.h0)}`),
+      h('button', { class: 'btn sm lite', onclick: () => { S.galVer = fr ? 'cima' : 'frente'; if (S.colocar.obj) { const c = centro(S.colocar.obj); posFantasma(W2S(c)); } barraPoli(); desenhar(); } }, fr ? 'Usar visto de cima' : 'Usar visto de frente'),
       h('button', { class: 'btn sm lite', onclick: () => { S.colocar.rot = (S.colocar.rot + 90) % 360; if (S.colocar.obj) S.colocar.obj.rot = S.colocar.rot; desenhar(); } }, 'Girar 90°'),
       h('button', { class: 'btn sm lite', onclick: () => { const it2 = S.colocar.item; cancelarColocar(); S.galeria = true; S.galCat = it2.cat; montarGaleria(); } }, 'Trocar peça'),
       h('button', { class: 'btn sm perigo', onclick: cancelarColocar }, 'Cancelar'));
@@ -977,7 +979,7 @@ function trechoDigitado(inp) {
 function atualizaDica() {
   const el = $('#dica'); if (!el) return;
   const f = S.ferr; let t = '';
-  if (S.colocar) t = 'Toque no desenho onde a peça vai ficar. Perto de uma parede, ela encosta e gira sozinha.';
+  if (S.colocar) t = 'Toque onde a peça vai ficar: ela fica centrada no toque. Colada numa parede, encosta e gira sozinha.';
   else if (S.poli) t = 'Toque ponto a ponto ou arraste cada trecho. Toque no último ponto para concluir, ou no primeiro (amarelo) para fechar o cômodo.';
   else if (f === 'parede' || f === 'linha') t = 'Toque onde começa e siga ponto a ponto. Com 90° ligado, os trechos ficam retos.';
   else if (f === 'livre') t = 'Desenhe à mão livre. Segure a caneta parada no fim do traço para virar reta, retângulo, círculo ou triângulo.';
@@ -1006,7 +1008,7 @@ function abrir(doc) {
   S.doc = doc; S.folha = 0;
   const f = doc.folhas[0]; if (!f.vista) f.vista = { s: 1.6, ox: 200, oy: 150, auto: true };
   doc.objs = f.objs; doc.vista = f.vista;
-  S.tela = 'editor'; S.sel = []; S.undo = []; S.redo = []; S.base = snapshot(); S.poli = null; S.colocar = null; S.galeria = false; S.galVer = null;
+  S.tela = 'editor'; S.sel = []; S.undo = []; S.redo = []; S.base = snapshot(); S.poli = null; S.colocar = null; S.galeria = false;
   S.ferr = objs().length ? 'sel' : (doc.id === '__estudio' ? 'ret' : 'parede');
   render();
 }
@@ -1446,7 +1448,7 @@ function encostar(o) {
       const ux = (b.x - a.x) / L, uy = (b.y - a.y) / L, tt = (c.x - a.x) * ux + (c.y - a.y) * uy;
       if (tt < -o.w / 2 || tt > L + o.w / 2) continue;
       const d = -(c.x - a.x) * uy + (c.y - a.y) * ux;
-      const lim = naParede ? t / 2 + 45 / s : o.h / 2 + t / 2 + 45 / s;
+      const lim = naParede ? t / 2 + 25 / s : o.h / 2 + t / 2 + 25 / s;
       if (Math.abs(d) > lim) continue;
       if (!melhor || Math.abs(d) < Math.abs(melhor.d)) melhor = { a, ux, uy, tt, d, t, L };
     }
@@ -1867,7 +1869,7 @@ function abrirGaleria() {
   if (S.poli) finalizarPoli();
   S.galeria = !S.galeria; montarGaleria();
 }
-const galeriaDeFrente = () => S.galVer ? S.galVer === 'frente' : (S.doc && folhaAtual().tipo !== 'planta');
+const galeriaDeFrente = () => S.galVer === 'frente';
 function montarGaleria() {
   const el = $('#gaveta'); if (!el) return;
   el.style.display = S.galeria ? '' : 'none';
@@ -1884,17 +1886,17 @@ function montarGaleria() {
         h('button', { class: 'btn sm lite', style: 'min-height:32px;padding:0 8px;font-size:13px', onclick: () => abrirEstudio(item) }, item.fixo ? 'Copiar e editar' : 'Editar'),
         !item.fixo ? h('button', { class: 'btn sm perigo', style: 'min-height:32px;padding:0 8px;font-size:13px', onclick: () => excluirPeca(item) }, 'Excluir') : null) : null)))
     : h('p', { class: 'hint', style: 'grid-column:1/-1' }, S.galCat === 'Minhas peças' && !busca ? 'Nenhuma peça sua ainda. Desenhe no estúdio ou selecione objetos no desenho e toque em "Salvar peça".' : 'Nada encontrado.'));
-  const vis = (k, n) => h('button', { class: 'cat' + ((deFrente ? 'frente' : 'cima') === k ? ' on' : ''), style: 'padding:0 10px', onclick: () => { S.galVer = k; montarGaleria(); } }, n);
+  const vis = (k, n) => h('button', { class: 'cat' + ((deFrente ? 'frente' : 'cima') === k ? ' on' : ''), style: 'padding:0 12px', 'aria-pressed': (deFrente ? 'frente' : 'cima') === k ? 'true' : 'false', onclick: () => { S.galVer = k; montarGaleria(); } }, n);
   ap(el,
     h('div', { class: 'gal-topo' },
       h('div', { class: 'row' }, h('h2', { style: 'font-size:22px;font-weight:800;font-stretch:85%' }, 'Biblioteca'), h('span', { class: 'sp' }),
-        h('div', { class: 'cats' }, vis('cima', 'De cima'), vis('frente', 'De frente')),
         h('button', { class: 'btn sm lite', onclick: () => { S.galeria = false; montarGaleria(); ferramentas(); } }, 'Fechar')),
+      h('div', { class: 'row', style: 'margin-top:10px' }, h('span', { style: 'font-weight:700;font-size:14px' }, 'Desenho da peça:'), vis('cima', 'Visto de cima'), vis('frente', 'Visto de frente')),
       h('input', { class: 'i', placeholder: 'Buscar peça (ex.: geladeira, aéreo, tomada)', value: S.galBusca || '', 'aria-label': 'Buscar peça', oninput: ev => { S.galBusca = ev.target.value; const pos = ev.target.selectionStart; montarGaleria(); const i = $('#gaveta input'); i.focus(); i.setSelectionRange(pos, pos); } }),
       !busca ? h('div', { class: 'cats', style: 'margin-top:8px' }, BIB_CATS.map(c => h('button', { class: 'cat' + (S.galCat === c ? ' on' : ''), style: 'padding:0 10px', onclick: () => { S.galCat = c; montarGaleria(); } }, c))) : null,
-      h('p', { class: 'hint' }, folhaAtual().tipo === 'planta'
-        ? 'Toque numa peça e depois no desenho. Perto de uma parede, ela encosta e gira sozinha. Portas e janelas entram na parede.'
-        : 'Vista de parede: a peça entra de frente, na altura do chão certa (aéreo a 150 cm, tomada a 30 cm...) e gruda nas vizinhas.')),
+      h('p', { class: 'hint' }, !deFrente
+        ? 'A peça entra desenhada vista de cima, onde você tocar. Se tocar colado numa parede, ela encosta e gira sozinha.'
+        : 'A peça entra desenhada vista de frente, onde você tocar. Numa vista de parede, perto da altura padrão (aéreo a 150 cm, tomada a 30 cm...) ela gruda nessa altura.')),
     grade,
     h('div', { class: 'gal-rodape' },
       h('button', { class: 'btn am sm', onclick: () => abrirEstudio(null) }, 'Criar peça no estúdio'),
@@ -1904,18 +1906,25 @@ function comecarColocar(item) {
   S.galeria = false; S.galBusca = ''; if (item.cat) S.galCat = item.cat; montarGaleria(); ferramentas();
   if (S.poli) finalizarPoli();
   S.sel = []; S.colocar = { item, rot: 0, obj: null };
+  if (TELA && TELA.W) posFantasma({ x: TELA.W / 2 + 35, y: TELA.H / 2 }); // prévia no meio da tela até você tocar
   barraPoli(); painel(); desenhar(); atualizaDica();
 }
+// a peça fica centrada exatamente onde a caneta ou o dedo tocou; só encosta ou gruda quando está bem perto
 function posFantasma(p) {
   const C = S.colocar; if (!C) return;
-  const w = S2W(p), q = cfg.ima ? snapGrade(w) : w, fo = folhaAtual();
-  if (fo.tipo === 'planta') {
-    const o = instanciar(C.item, q.x, q.y); o.rot = C.rot;
-    C.enc = encostar(o); if (!C.enc) grudar(o); else grudar(o, o.rot % 180 ? 'y' : 'x'); C.obj = o; return;
+  const w = S2W(p), fo = folhaAtual();
+  if (S.galVer !== 'frente') {
+    const o = instanciar(C.item, w.x, w.y); o.rot = C.rot;
+    C.enc = fo.tipo === 'planta' ? encostar(o) : null;
+    if (!C.enc) grudar(o); else grudar(o, o.rot % 180 ? 'y' : 'x');
+    C.obj = o; return;
   }
-  const o = instanciarFrente(C.item, q.x, q.y);
-  if (fo.tipo === 'parede') { const H = vistaInfo(fo).H; o.y = f2(H - (C.item.elev || 0) - o.h); } // altura do chão da peça
-  grudar(o); C.enc = null; C.obj = o;
+  const o = instanciarFrente(C.item, w.x, w.y); o.rot = C.rot; C.enc = null;
+  if (fo.tipo === 'parede' && cfg.ima && !o.rot) { // perto da altura padrão da peça, gruda nela
+    const yPad = f2(vistaInfo(fo).H - (C.item.elev || 0) - o.h);
+    if (Math.abs(yPad - o.y) * v().s < 40) o.y = yPad;
+  }
+  grudar(o); C.obj = o;
 }
 function colocarPeca() {
   const C = S.colocar; if (!C || !C.obj) return;
@@ -2039,7 +2048,7 @@ function vistaInfo(f) {
   const O = { x: E.x + r.x * fech / 2 + n.x * t / 2, y: E.y + r.y * fech / 2 + n.y * t / 2 };
   const proj = [];
   for (const o of po) {
-    if (!ENCOSTA.has(o.tipo)) continue;
+    if (!ENCOSTA.has(o.tipo) || o.deFrente) continue;
     const c = centro(o), dx = c.x - O.x, dy = c.y - O.y, al = dx * r.x + dy * r.y, dp = dx * n.x + dy * n.y;
     if (al < -o.w / 2 + 1 || al > L + o.w / 2 - 1) continue;
     const yv = rot({ x: 0, y: 1 }, o.rot || 0), alin = yv.x * n.x + yv.y * n.y;
