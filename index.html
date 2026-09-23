@@ -111,6 +111,28 @@ label.f>span{display:block;font-size:13px;color:var(--grafite2);margin-bottom:4p
 .lseg{display:grid;grid-template-columns:34px 1fr;gap:8px;align-items:center;margin-bottom:6px}
 .lseg b{height:30px;border-radius:15px;border:1.5px solid var(--grafite);display:grid;place-items:center;font-size:13px}
 
+.ferr button.on.trava{box-shadow:inset 0 0 0 3px var(--grafite)}
+.ferr button.on.trava::after{content:"";position:absolute;margin:30px 0 0 30px;width:10px;height:10px;border-radius:5px;background:var(--grafite)}
+.ferr button{position:relative}
+.formas{position:absolute;left:80px;top:10px;display:flex;flex-wrap:wrap;gap:4px;max-width:calc(100% - 100px);background:var(--branco);border:1.5px solid var(--linha);border-radius:14px;padding:6px;box-shadow:0 2px 10px rgba(38,42,40,.08);z-index:2}
+.formas button{width:46px;height:46px;border-radius:10px;border:0;background:transparent;display:grid;place-items:center;padding:0}
+.formas button.on{background:var(--trena)}
+.rapida{position:absolute;display:flex;gap:4px;background:var(--grafite);border-radius:14px;padding:5px;box-shadow:0 8px 24px rgba(38,42,40,.3);z-index:3}
+.rapida button{min-width:58px;height:54px;border:0;border-radius:10px;background:transparent;color:var(--branco);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:0 6px;font-size:11px;font-weight:600}
+.rapida button:active{background:#3a403d}
+.rapida button.perigo{color:#FF9A8F}
+.gaveta{position:absolute;top:0;right:0;bottom:0;width:min(460px,100%);background:var(--branco);border-left:1.5px solid var(--linha);box-shadow:-10px 0 30px rgba(38,42,40,.15);display:flex;flex-direction:column;z-index:6}
+.gal-topo{padding:14px 14px 6px;border-bottom:1.5px solid var(--grade)}
+.gal-topo .i{margin-top:10px}
+.gal-grid{flex:1;min-height:0;overflow:auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(128px,1fr));grid-auto-rows:max-content;gap:10px;padding:12px 14px;align-content:start}
+.gal-item{border:1.5px solid var(--linha);border-radius:12px;background:#fff;display:flex;flex-direction:column}
+.gal-th{display:block;width:100%;border:0;padding:0;background:#fff;aspect-ratio:16/11;border-bottom:1.5px solid var(--grade);border-radius:11px 11px 0 0;overflow:hidden}
+.gal-th svg{width:100%;height:100%;display:block}
+.gal-info{padding:6px 8px 8px;display:flex;flex-direction:column;gap:1px}
+.gal-info b{font-size:13px;line-height:1.2}
+.gal-info small{font-size:12px;color:var(--grafite2);font-stretch:85%}
+.gal-rodape{padding:10px 14px;border-top:1.5px solid var(--grade);display:flex;gap:8px;flex-wrap:wrap}
+.selo-estudio{background:var(--trena);color:var(--grafite);border-radius:8px;padding:4px 10px;font-weight:800;font-size:14px}
 @media (orientation:portrait) and (max-width:1100px){
   .corpo{grid-template-columns:1fr;grid-template-rows:1fr 38%}
   .corpo.sem-painel{grid-template-rows:1fr}
@@ -143,7 +165,7 @@ label.f>span{display:block;font-size:13px;color:var(--grafite2);margin-bottom:4p
    Esquadro — editor de desenho para móveis planejados
    Unidade interna: centímetros. Tela: px = cm * s + o
    ========================================================= */
-const VERSAO = '2.0.0';
+const VERSAO = '2.1.0';
 
 /* ---------- utilidades ---------- */
 const $ = (s, r = document) => r.querySelector(s);
@@ -177,6 +199,7 @@ function toast(msg) {
 }
 
 /* ---------- configuração ---------- */
+let COR_FUNDO = '#EDF0EA'; // cor do papel: tapa a parede no vão de portas e janelas
 const cfg = { unidade: 'cm', passo: 5, dedo: false, grade: true, ima: true, orto: true };
 function fmt(cm, suf = false) {
   if (cm == null || isNaN(cm)) return '—';
@@ -196,12 +219,12 @@ const fmtNum = x => String(Math.round(x * 10) / 10).replace('.', ',');
 
 /* ---------- banco local ---------- */
 const DB = {
-  db: null, ok: false, mem: { desenhos: new Map(), config: new Map() },
+  db: null, ok: false, mem: { desenhos: new Map(), config: new Map(), biblioteca: new Map() },
   async abrir() {
     try {
       this.db = await new Promise((res, rej) => {
-        const r = indexedDB.open('esquadro-desenho', 1);
-        r.onupgradeneeded = () => { r.result.createObjectStore('desenhos', { keyPath: 'id' }); r.result.createObjectStore('config', { keyPath: 'k' }); };
+        const r = indexedDB.open('esquadro-desenho', 2);
+        r.onupgradeneeded = () => { const d = r.result; for (const [n, k] of [['desenhos', 'id'], ['config', 'k'], ['biblioteca', 'id']]) if (!d.objectStoreNames.contains(n)) d.createObjectStore(n, { keyPath: k }); };
         r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error);
       });
       this.ok = true;
@@ -241,24 +264,31 @@ const FERR = [
   ['livre', 'Traço livre', '<path d="M3 17c3-6 5 2 8-3s4-8 7-6 2 7 3 7"/>'],
   ['ret', 'Retângulo (móvel)', '<rect x="4" y="6" width="16" height="12" rx="1"/>'],
   ['elipse', 'Círculo e elipse', '<ellipse cx="12" cy="12" rx="8" ry="6"/>'],
+  ['formas', 'Mais formas', '<path d="M12 3l3 6h-6z"/><rect x="3" y="13" width="8" height="8" rx="1"/><path d="M17 13l4 4-4 4-4-4z"/>'],
   ['texto', 'Texto', '<path d="M5 6V4h14v2M12 4v16M9 20h6"/>'],
-  ['cota', 'Cota (medida)', '<path d="M4 8v8M20 8v8M4 12h16M7 10l-3 2 3 2M17 10l3 2-3 2"/>']
+  ['cota', 'Cota (medida)', '<path d="M4 8v8M20 8v8M4 12h16M7 10l-3 2 3 2M17 10l3 2-3 2"/>'],
+  null,
+  ['biblioteca', 'Biblioteca de móveis e eletros', '<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M17.5 14v7M14 17.5h7"/>']
 ];
 const NOME_FERR = Object.fromEntries(FERR.filter(Boolean).map(f => [f[0], f[1]]));
 
 /* ---------- estado ---------- */
 const S = {
   tela: 'lista', lista: [], doc: null, ferr: 'sel', sel: [], painel: true,
-  undo: [], redo: [], base: null, poli: null,
+  undo: [], redo: [], base: null, poli: null, trava: false, forma: 'triangulo', colocar: null, estudio: null,
+  galeria: false, galCat: 'Cozinha', galBusca: '', bibUser: [],
   padrao: {
     parede: estiloCat('parede'), linha: { ...estiloCat('medida'), esp: 2 }, livre: { ...estiloCat('obs'), linha: 'solida' },
-    ret: estiloCat('movel'), elipse: estiloCat('movel'), texto: estiloCat('medida'), cota: estiloCat('medida')
+    ret: estiloCat('movel'), elipse: estiloCat('movel'), formas: estiloCat('movel'), texto: estiloCat('medida'), cota: estiloCat('medida')
   }
 };
 const objs = () => S.doc.objs;
 const porId = id => S.doc.objs.find(o => o.id === id);
 const selObjs = () => S.sel.map(porId).filter(Boolean);
 const v = () => S.doc.vista;
+const CAIXA = new Set(['ret', 'elipse', 'bloco', 'porta', 'janela']);
+const ehCaixa = o => CAIXA.has(o.tipo);
+const ENCOSTA = new Set(['bloco', 'porta', 'janela']); // encostam sozinhos na parede
 
 /* ---------- geometria ---------- */
 const W2S = p => ({ x: p.x * v().s + v().ox, y: p.y * v().s + v().oy });
@@ -299,7 +329,8 @@ function geoCota(o) {
 function bbox(o) {
   let ps;
   if (o.pts) { ps = o.pts.slice(); for (const [i, j] of segs(o)) { const a = o.pts[i]; if (a.c) for (const t of [0.25, 0.5, 0.75]) ps.push(qPt(a, a.c, o.pts[j], t)); } }
-  else if (o.tipo === 'ret' || o.tipo === 'elipse') ps = cantosRet(o);
+  else if (o.tipo === 'porta') ps = cantosPorta(o);
+  else if (ehCaixa(o)) ps = cantosRet(o);
   else if (o.tipo === 'texto') {
     const lin = String(o.texto || '').split('\n'), s = S.doc && S.doc.vista ? v().s : 1;
     const w = Math.max(...lin.map(l => l.length), 1) * o.tam * 0.55 / s, hh = lin.length * o.tam * 1.2 / s;
@@ -314,7 +345,7 @@ function limitesDe(lista, margem = 0) {
   return { x0: x0 - margem, y0: y0 - margem, x1: x1 + margem, y1: y1 + margem };
 }
 function centro(o) {
-  if (o.tipo === 'ret' || o.tipo === 'elipse') return { x: o.x + o.w / 2, y: o.y + o.h / 2 };
+  if (ehCaixa(o)) return { x: o.x + o.w / 2, y: o.y + o.h / 2 };
   if (o.tipo === 'texto') return { x: o.x, y: o.y };
   if (o.pts && o.fechado && o.pts.length > 2) {
     let A = 0, cx = 0, cy = 0; const P = o.pts;
@@ -353,7 +384,7 @@ function snapPonto(p, base, ignorar) {
   const testa = q => { const d = dist(p, q); if (d < lim && (!melhor || d < melhor.d)) melhor = { d, q }; };
   if (cfg.ima) for (const o of objs()) {
     if (o.id === ignorar) continue;
-    if (o.pts) o.pts.forEach(testa); else if (o.tipo === 'ret') cantosRet(o).forEach(testa); else if (o.tipo === 'cota') { testa(o.a); testa(o.b); }
+    if (o.pts) o.pts.forEach(testa); else if (ehCaixa(o)) cantosRet(o).forEach(testa); else if (o.tipo === 'cota') { testa(o.a); testa(o.b); }
   }
   if (S.poli && S.poli.pts.length > 2) testa(S.poli.pts[0]);
   if (melhor) return { x: melhor.q.x, y: melhor.q.y };
@@ -385,7 +416,7 @@ function rotulo(a, b, txt, s, lado, cor, extra = 0, meio = null) {
   let ang = Math.atan2(dy, dx) * 180 / Math.PI; if (ang > 90) ang -= 180; if (ang < -90) ang += 180;
   return `<text x="${m.x}" y="${m.y}" font-size="${12 / s}" font-weight="700" text-anchor="middle" dominant-baseline="central" fill="${corTexto(cor)}" stroke="#fff" stroke-width="${3 / s}" paint-order="stroke" transform="rotate(${ang} ${m.x} ${m.y})" pointer-events="none">${esc(txt)}</text>`;
 }
-function svgObj(o, s, extra = '') {
+function svgObj(o, s, extra = '', semId = false) {
   const e = o.estilo, w = espW(e, s), tr = e.traco, pr = e.preench === 'none' ? 'none' : e.preench;
   const cheio = pr !== 'none';
   const tracoAttr = `stroke="${tr}" stroke-width="${w}" ${dash(e, w, s)}`;
@@ -397,6 +428,7 @@ function svgObj(o, s, extra = '') {
     const junta = o.tipo === 'parede' ? 'stroke-linejoin="miter" stroke-miterlimit="10" stroke-linecap="square"' : 'stroke-linejoin="round" stroke-linecap="round"';
     g += `<path d="${d}" ${tracoAttr} ${o.fechado ? fillAttr : 'fill="none"'} ${junta} pointer-events="none"/>`;
     g += `<path d="${d}" stroke="transparent" stroke-width="${hitW}" fill="${o.fechado && cheio ? 'transparent' : 'none'}" pointer-events="${o.fechado && cheio ? 'all' : 'stroke'}"/>`;
+    if (o.tipo !== 'parede') g += svgPontas(o, e, w, s, tr);
     if (o.med && !o.suave) {
       const ext = o.tipo === 'parede' ? w / 2 : 0;
       for (const [i, j] of segs(o)) {
@@ -419,6 +451,18 @@ function svgObj(o, s, extra = '') {
     if (o.med && o.w * s > 30) g += rotulo({ x: o.x, y: o.y - w / 2 }, { x: o.x + o.w, y: o.y - w / 2 }, fmt(o.w), s, -1, tr);
     if (o.med && o.h * s > 30) g += rotulo({ x: o.x - w / 2, y: o.y + o.h }, { x: o.x - w / 2, y: o.y }, fmt(o.h), s, -1, tr);
     g += `</g>`;
+  } else if (o.tipo === 'bloco') {
+    const t = transfBloco(o), cx = o.x + o.w / 2, cy = o.y + o.h / 2, cn = cantosRet(o);
+    g += `<g pointer-events="none">${o.itens.map(f => svgObj(mundoFilho(f, t), s, '', true)).join('')}</g>`;
+    g += `<path d="M${cn.map(q => `${q.x} ${q.y}`).join('L')}Z" fill="transparent" stroke="none" pointer-events="all"/>`;
+    if (o.med) {
+      g += `<g ${o.rot ? `transform="rotate(${o.rot} ${cx} ${cy})"` : ''}>`;
+      if (o.w * s > 30) g += rotulo({ x: o.x, y: o.y }, { x: o.x + o.w, y: o.y }, fmt(o.w), s, -1, tr);
+      if (o.h * s > 30) g += rotulo({ x: o.x, y: o.y + o.h }, { x: o.x, y: o.y }, fmt(o.h), s, -1, tr);
+      g += `</g>`;
+    }
+  } else if (o.tipo === 'porta' || o.tipo === 'janela') {
+    g += svgPortaJanela(o, s, w, tr);
   } else if (o.tipo === 'texto') {
     const lin = String(o.texto || ' ').split('\n'), fs = o.tam / s, y0 = o.y - (lin.length - 1) * fs * 0.6;
     g += `<text x="${o.x}" y="${y0}" font-size="${fs}" font-weight="700" fill="${corTexto(tr)}" text-anchor="middle" dominant-baseline="central" stroke="#fff" stroke-width="${3 / s}" paint-order="stroke" ${o.rot ? `transform="rotate(${o.rot} ${o.x} ${o.y})"` : ''}>` +
@@ -432,16 +476,28 @@ function svgObj(o, s, extra = '') {
     g += `<path d="M${G.a2.x} ${G.a2.y}L${G.b2.x} ${G.b2.y}" stroke="transparent" stroke-width="${22 / s}" pointer-events="stroke"/>`;
     g += rotulo(G.a2, G.b2, fmt(G.L), s, sg, tr, -4 / s);
   }
-  // nome (e área, nos cômodos)
-  if (o.nome && o.tipo !== 'texto') {
+  // nome (e área, nos cômodos); o nome dos cômodos vai por cima de tudo (svgLista)
+  if (o.nome && o.tipo !== 'texto' && !(o.tipo === 'parede' && o.fechado && !semId) && cabeNome(o, s)) g += svgNome(o, s, tr);
+  return semId ? `<g ${extra}>${g}</g>` : `<g data-id="${o.id}" ${extra}>${g}</g>`;
+}
+// nome de peça só aparece se couber dentro dela
+const cabeNome = (o, s) => o.tipo !== 'bloco' || Math.max(o.w, o.h) * s >= String(o.nome).length * (o.tamNome || 15) * 0.58;
+function svgLista(lista, s) {
+  let g = ''; for (const o of lista) g += svgObj(o, s);
+  for (const o of lista) if (o.tipo === 'parede' && o.fechado && o.nome) g += svgNome(o, s, o.estilo.traco);
+  return g;
+}
+function svgNome(o, s, tr) {
+  let g = '';
+  {
     const c = centro(o), fs = (o.tamNome || 15) / s;
     const temArea = o.pts && o.fechado && o.pts.length > 2 && o.tipo === 'parede';
     let txt = `<tspan x="${c.x}" dy="0">${esc(o.nome)}</tspan>`;
     if (temArea) txt += `<tspan x="${c.x}" dy="${fs * 1.2}" font-size="${fs * 0.75}" font-weight="600">${area(o).toLocaleString('pt-BR', { maximumFractionDigits: 2 })} m²</tspan>`;
-    const rr = (o.tipo === 'ret' || o.tipo === 'elipse') && o.rot ? `transform="rotate(${o.rot} ${c.x} ${c.y})"` : '';
+    const rr = ehCaixa(o) && o.rot ? `transform="rotate(${o.rot} ${c.x} ${c.y})"` : '';
     g += `<text x="${c.x}" y="${c.y - (temArea ? fs * 0.45 : 0)}" font-size="${fs}" font-weight="800" fill="${corTexto(tr)}" text-anchor="middle" dominant-baseline="central" stroke="#fff" stroke-width="${3.5 / s}" paint-order="stroke" pointer-events="none" ${rr}>${txt}</text>`;
   }
-  return `<g data-id="${o.id}" ${extra}>${g}</g>`;
+  return g;
 }
 function svgGrade(W, H) {
   if (!cfg.grade) return '';
@@ -463,16 +519,24 @@ function desenhar() {
   const { svg, W, H } = TELA, vv = v(), s = vv.s;
   let html = `<g pointer-events="none">${svgGrade(W, H)}</g>`;
   html += `<g transform="matrix(${s} 0 0 ${s} ${vv.ox} ${vv.oy})">`;
-  for (const o of objs()) html += svgObj(o, s);
+  html += svgLista(objs(), s);
   if (S.poli) {
     const pv = { ...S.poli, pts: S.poli.cursor ? [...S.poli.pts, S.poli.cursor] : S.poli.pts };
     html += svgObj(pv, s, 'opacity=".85" pointer-events="none"');
     if (S.poli.pts.length) { const p0 = S.poli.pts[0]; html += `<circle cx="${p0.x}" cy="${p0.y}" r="${7 / s}" fill="#F4C20D" stroke="#262A28" stroke-width="${2 / s}" pointer-events="none"/>`; }
   }
   if (P.acao && P.acao.previa) html += svgObj(P.acao.previa, s, 'opacity=".85" pointer-events="none"');
+  if (S.colocar && S.colocar.obj) html += svgObj(S.colocar.obj, s, 'opacity=".75" pointer-events="none"');
+  if (S.estudio && objs().length) { // estúdio: moldura da peça, com o lado do fundo marcado
+    const b = limitesDe(objs()), fs = 12 / s;
+    html += `<rect x="${b.x0}" y="${b.y0}" width="${b.x1 - b.x0}" height="${b.y1 - b.y0}" fill="none" stroke="#C99A00" stroke-width="${1.5 / s}" stroke-dasharray="${6 / s} ${4 / s}" pointer-events="none"/>`;
+    html += `<path d="M${b.x0} ${b.y0}H${b.x1}" stroke="#C99A00" stroke-width="${5 / s}" pointer-events="none"/>`;
+    html += `<text x="${(b.x0 + b.x1) / 2}" y="${b.y0 - 14 / s}" font-size="${fs}" font-weight="700" text-anchor="middle" fill="#8a6a00" pointer-events="none">Fundo da peça (encosta na parede)</text>`;
+    html += `<text x="${(b.x0 + b.x1) / 2}" y="${b.y1 + 22 / s}" font-size="${fs * 1.2}" font-weight="800" text-anchor="middle" fill="#262A28" pointer-events="none">${fmt(b.x1 - b.x0)} × ${fmt(b.y1 - b.y0)} ${cfg.unidade}</text>`;
+  }
   html += `</g><g>${svgSelecao()}</g>`;
   svg.innerHTML = html;
-  atualizaEscala();
+  atualizaEscala(); posicionarRapida();
 }
 function alca(p, tipo, forma = 'q', cor = '#FBFCFA') {
   const r = 9;
@@ -488,7 +552,7 @@ function svgSelecao() {
   }
   const sel = selObjs();
   for (const o of sel) {
-    if (o.tipo === 'ret' || o.tipo === 'elipse') {
+    if (ehCaixa(o)) {
       const c = cantosRet(o).map(W2S);
       g += `<path d="M${c.map(p => `${p.x} ${p.y}`).join('L')}Z" fill="none" stroke="#C99A00" stroke-width="2" stroke-dasharray="6 4" pointer-events="none"/>`;
     } else {
@@ -501,7 +565,7 @@ function svgSelecao() {
   if (o.pts) {
     if (!o.suave) for (const [i, j] of segs(o)) g += alca(W2S(meioSeg(o, i, j)), `m:${i}`, 'm');
     o.pts.forEach((p, i) => { g += alca(W2S(p), `v:${i}`, 'q'); });
-  } else if (o.tipo === 'ret' || o.tipo === 'elipse') {
+  } else if (ehCaixa(o)) {
     const c = { x: o.x + o.w / 2, y: o.y + o.h / 2 };
     const pos = { nw: [-1, -1], n: [0, -1], ne: [1, -1], e: [1, 0], se: [1, 1], s: [0, 1], sw: [-1, 1], w: [-1, 0] };
     for (const [k, [sx, sy]] of Object.entries(pos)) g += alca(W2S(rot({ x: c.x + sx * o.w / 2, y: c.y + sy * o.h / 2 }, o.rot || 0, c)), `r:${k}`, 'q');
@@ -552,7 +616,7 @@ function botoesDesfazer() {
 }
 let _tS;
 function salvar() {
-  if (!S.doc) return;
+  if (!S.doc || S.doc.id === '__estudio') return;
   S.doc.atualizadoEm = Date.now();
   const d = S.doc;
   clearTimeout(_tS);
@@ -580,32 +644,44 @@ function ptrDown(e) {
   if (e.pointerType === 'pen') P.penAt = Date.now();
   const penNaTela = [...P.ptrs.values()].some(q => q.tipo === 'pen');
   if (e.pointerType === 'touch' && (penNaTela || Date.now() - P.penAt < 700)) return; // palma da mão
-  TELA.svg.setPointerCapture(e.pointerId);
+  try { TELA.svg.setPointerCapture(e.pointerId); } catch (_) {}
   P.ptrs.set(e.pointerId, { x: p.x, y: p.y, x0: p.x, y0: p.y, t0: performance.now(), tipo: e.pointerType });
   const toques = [...P.ptrs.values()].filter(q => q.tipo === 'touch');
   if (toques.length >= 2) {
-    P.acao = null; P.pan = null;
+    // segundo dedo: cancela o que o primeiro fazia e vira pinça (ou gesto de desfazer)
+    if (P.acao && (P.acao.tipo === 'mover' || P.acao.tipo === 'alca')) {
+      if (P.acao.tipo === 'mover') P.acao.objs.forEach((o, k) => Object.assign(o, clone(P.acao.orig[k])));
+      else Object.assign(P.acao.o, clone(P.acao.orig));
+    }
+    if (P.acao && P.acao.tipo !== 'poli') P.acao = null;
+    P.pan = null;
+    P.gesto = P.gesto ? { ...P.gesto, n: Math.max(P.gesto.n, toques.length) } : { n: toques.length, t0: performance.now(), moveu: false };
     const [a, b] = toques; P.pinch = { d: Math.hypot(a.x - b.x, a.y - b.y), mx: (a.x + b.x) / 2, my: (a.y + b.y) / 2 };
     desenhar(); return;
   }
+  if (e.pointerType === 'touch') P.gesto = null;
   const alvo = alvoEm(e);
-  const botaoPan = (e.pointerType === 'pen' && (e.buttons & 2)) || (e.pointerType === 'mouse' && e.button === 1) || S.ferr === 'mao';
+  const botaoCaneta = e.pointerType === 'pen' && ((e.buttons & 2) || (e.buttons & 32)); // botão da S Pen: seleciona e move
+  if (!botaoCaneta && ((e.pointerType === 'mouse' && e.button === 1) || S.ferr === 'mao')) { P.pan = { id: e.pointerId, x: p.x, y: p.y, dedo: e.pointerType === 'touch', alvo }; return; }
   let age = e.pointerType !== 'touch' || cfg.dedo;
-  // dedo: arrasta alças e objetos já selecionados; no resto, move a tela
-  if (e.pointerType === 'touch' && !cfg.dedo && S.ferr === 'sel') {
+  if (e.pointerType === 'touch' && !cfg.dedo) {
     const idO = alvo.o && alvo.o.getAttribute('data-id');
-    if (alvo.h || (idO && S.sel.includes(idO))) age = true;
+    if (S.colocar) age = true;                                           // dedo também coloca peças
+    else if (S.ferr === 'sel' && (alvo.h || (idO && S.sel.includes(idO)))) age = true; // dedo arrasta o que está selecionado
   }
-  if (botaoPan || !age) { P.pan = { id: e.pointerId, x: p.x, y: p.y, dedo: e.pointerType === 'touch', alvo }; return; }
-  iniciarAcao(e, p, alvo);
+  if (!age) { P.pan = { id: e.pointerId, x: p.x, y: p.y, dedo: true, alvo }; return; }
+  iniciarAcao(e, p, alvo, botaoCaneta);
 }
 function ptrMove(e) {
   const p = posTela(e), q = P.ptrs.get(e.pointerId);
-  if (!q) { // caneta pairando: prévia do próximo trecho
-    if (S.poli && e.pointerType !== 'touch' && S.poli.pts.length) { S.poli.cursor = snapPonto(S2W(p), S.poli.pts[S.poli.pts.length - 1]); desenhar(); barraPoliInfo(); }
+  if (!q) { // caneta pairando: prévia do próximo trecho ou da peça
+    if (e.pointerType === 'touch') return;
+    if (S.colocar) { posFantasma(p); desenhar(); return; }
+    if (S.poli && S.poli.pts.length) { S.poli.cursor = snapPonto(S2W(p), S.poli.pts[S.poli.pts.length - 1]); desenhar(); barraPoliInfo(); }
     return;
   }
   q.x = p.x; q.y = p.y;
+  if (P.gesto && q.tipo === 'touch' && Math.hypot(q.x - q.x0, q.y - q.y0) > 14) P.gesto.moveu = true;
   if (P.pinch) {
     const t = [...P.ptrs.values()].filter(k => k.tipo === 'touch');
     if (t.length >= 2) {
@@ -622,11 +698,21 @@ function ptrUp(e) {
   const q = P.ptrs.get(e.pointerId); if (!q) return;
   P.ptrs.delete(e.pointerId);
   const moveu = Math.hypot(q.x - q.x0, q.y - q.y0) > 10, rapido = performance.now() - q.t0 < 450;
-  if (P.pinch) { if (P.ptrs.size < 2) { P.pinch = null; salvar(); } return; }
+  const semDedos = ![...P.ptrs.values()].some(k => k.tipo === 'touch');
+  if (P.gesto && semDedos) { // toque com dois dedos desfaz; com três, refaz
+    const g = P.gesto; P.gesto = null; P.pinch = null;
+    if (!g.moveu && performance.now() - g.t0 < 420) { if (g.n >= 3) { refazer(); toast('Refeito'); } else { desfazer(); toast('Desfeito'); } }
+    else salvar();
+    return;
+  }
+  if (P.pinch) { if (P.ptrs.size < 2) P.pinch = null; return; }
   if (P.pan && P.pan.id === e.pointerId) {
     const pan = P.pan; P.pan = null;
-    if (!moveu && rapido && pan.dedo && S.ferr === 'sel') tocarSelecionar(pan.alvo, false);
-    else salvar();
+    if (!moveu && rapido && pan.dedo && !S.poli) { // toque com o dedo: seleciona, em qualquer ferramenta
+      const id = pan.alvo.o && pan.alvo.o.getAttribute('data-id');
+      if (id && S.ferr !== 'sel') { S.ferr = 'sel'; ferramentas(); atualizaDica(); }
+      if (id || S.ferr === 'sel') tocarSelecionar(pan.alvo, false);
+    } else salvar();
     return;
   }
   if (P.acao && P.acao.id === e.pointerId) terminarAcao(e, posTela(e), moveu);
@@ -638,8 +724,9 @@ function tocarSelecionar(alvo, somar) {
   desenhar(); painel();
 }
 
-function iniciarAcao(e, p, alvo) {
-  const w = S2W(p), id = e.pointerId, f = S.ferr;
+function iniciarAcao(e, p, alvo, forcarSel) {
+  const w = S2W(p), id = e.pointerId, f = forcarSel ? 'sel' : S.ferr;
+  if (S.colocar && !forcarSel) { P.acao = { id, tipo: 'colocar' }; posFantasma(p); desenhar(); return; }
   if (f === 'sel') {
     if (alvo.h) {
       const o = selObjs()[0];
@@ -670,17 +757,20 @@ function iniciarAcao(e, p, alvo) {
     P.acao = { id, tipo: 'poli', perto };
     desenhar(); barraPoliInfo(); return;
   }
-  if (f === 'livre') { P.acao = { id, tipo: 'livre', pts: [w], previa: novoObj('livre', { pts: [w, w], suave: true, fechado: false, med: false }) }; return; }
-  if (f === 'ret' || f === 'elipse') { P.acao = { id, tipo: 'forma', a: snapGrade(w), previa: null }; return; }
+  if (f === 'livre') { P.acao = { id, tipo: 'livre', pts: [w], ult: p, previa: novoObj('livre', { pts: [w, w], suave: true, fechado: false, med: false }) }; return; }
+  if (f === 'ret' || f === 'elipse' || f === 'formas') { P.acao = { id, tipo: 'forma', a: snapGrade(w), previa: null }; return; }
   if (f === 'cota') { P.acao = { id, tipo: 'cota', a: snapPonto(w, null), previa: null }; return; }
   if (f === 'texto') { P.acao = { id, tipo: 'texto', a: w }; return; }
 }
 function moverAcao(e, p) {
   const A = P.acao, w = S2W(p);
+  if (A.tipo === 'colocar') { posFantasma(p); desenhar(); return; }
   if (A.tipo === 'mover') {
     let dx = w.x - A.ini.x, dy = w.y - A.ini.y;
     if (cfg.ima) { dx = Math.round(dx / cfg.passo) * cfg.passo; dy = Math.round(dy / cfg.passo) * cfg.passo; }
     A.objs.forEach((o, k) => { Object.assign(o, clone(A.orig[k])); mover(o, dx, dy); });
+    A.enc = null;
+    if (A.objs.length === 1 && ENCOSTA.has(A.objs[0].tipo)) A.enc = encostar(A.objs[0]); // encosta na parede
     desenhar(); return;
   }
   if (A.tipo === 'caixa') { A.bTela = p; desenhar(); return; }
@@ -689,18 +779,33 @@ function moverAcao(e, p) {
   if (A.tipo === 'livre') {
     const evs = e.getCoalescedEvents ? e.getCoalescedEvents() : [e];
     for (const ev of evs) A.pts.push(S2W(posTela(ev)));
-    A.previa.pts = A.pts; desenhar(); return;
+    if (dist(A.ult, p) > 6) { // a caneta andou: volta ao traço livre e reinicia a contagem para "segurar e endireitar"
+      A.ult = p; clearTimeout(A.timer);
+      if (A.forma) { A.forma = null; A.previa = novoObj('livre', { pts: A.pts, suave: true, fechado: false, med: false }); }
+      A.timer = setTimeout(() => {
+        if (P.acao !== A) return;
+        const f = reconhecer(A.pts);
+        if (f) { A.forma = f; A.previa = f; desenhar(); toast('Forma pronta. Solte a caneta para usar.'); }
+      }, 550);
+    }
+    if (!A.forma) A.previa.pts = A.pts;
+    desenhar(); return;
   }
   if (A.tipo === 'forma') {
-    const b = snapGrade(w);
-    A.previa = novoObj(S.ferr, { x: Math.min(A.a.x, b.x), y: Math.min(A.a.y, b.y), w: Math.abs(b.x - A.a.x), h: Math.abs(b.y - A.a.y), rot: 0 });
+    const b = snapGrade(w), x = Math.min(A.a.x, b.x), y = Math.min(A.a.y, b.y), ww = Math.abs(b.x - A.a.x), hh = Math.abs(b.y - A.a.y);
+    A.previa = S.ferr === 'formas' ? construirForma(S.forma, x, y, ww, hh) : novoObj(S.ferr, { x, y, w: ww, h: hh, rot: 0 });
     desenhar(); return;
   }
   if (A.tipo === 'cota') { const b = snapPonto(w, A.a); A.previa = novoObj('cota', { a: A.a, b, off: -24 / v().s }); desenhar(); return; }
 }
 function terminarAcao(e, p, moveu) {
   const A = P.acao; P.acao = null;
-  if (A.tipo === 'mover') { if (moveu) mudou(); else desenhar(); return; }
+  if (A.tipo === 'colocar') { colocarPeca(); return; }
+  if (A.tipo === 'mover') {
+    if (moveu) { mudou(); if (A.enc && !A.enc.cabe) toast(`Atenção: a peça (${fmt(A.objs[0].w, true)}) é maior que a parede livre (${fmt(A.enc.livre, true)}).`); }
+    else desenhar();
+    return;
+  }
   if (A.tipo === 'caixa') {
     if (!A.bTela || !moveu) { if (!A.somar) S.sel = []; desenhar(); painel(); return; }
     const a = S2W(A.aTela), b = S2W(A.bTela), x0 = Math.min(a.x, b.x), x1 = Math.max(a.x, b.x), y0 = Math.min(a.y, b.y), y1 = Math.max(a.y, b.y);
@@ -734,6 +839,8 @@ function terminarAcao(e, p, moveu) {
     desenhar(); barraPoliInfo(); return;
   }
   if (A.tipo === 'livre') {
+    clearTimeout(A.timer);
+    if (A.forma) { adicionar(A.forma); return; }
     const pts = rdp(A.pts, 2.2 / v().s).map(q => ({ x: f2(q.x), y: f2(q.y) }));
     if (pts.length < 2 || !moveu) { desenhar(); return; }
     const fechado = pts.length > 3 && dist(W2S(pts[0]), W2S(pts[pts.length - 1])) < 24;
@@ -743,7 +850,8 @@ function terminarAcao(e, p, moveu) {
   }
   if (A.tipo === 'forma') {
     let o = A.previa;
-    if (!o || o.w < 2 || o.h < 2) o = novoObj(S.ferr, { x: A.a.x, y: A.a.y, w: 60, h: 60, rot: 0 });
+    const pequeno = !o || (o.w != null ? (o.w < 2 || o.h < 2) : !moveu);
+    if (pequeno) o = S.ferr === 'formas' ? construirForma(S.forma, A.a.x, A.a.y, 60, 60) : novoObj(S.ferr, { x: A.a.x, y: A.a.y, w: 60, h: 60, rot: 0 });
     adicionar(o); return;
   }
   if (A.tipo === 'cota') {
@@ -798,7 +906,7 @@ function novoObj(tipo, props) {
 }
 function adicionar(o) {
   objs().push(o); S.sel = [o.id];
-  if (S.ferr !== 'livre') S.ferr = 'sel';
+  if (S.ferr !== 'livre' && !S.trava) S.ferr = 'sel';
   mudou(); desenhar(); ferramentas(); atualizaDica();
 }
 function finalizarPoli() {
@@ -815,8 +923,16 @@ function cancelarPoli() { S.poli = null; barraPoli(); botoesDesfazer(); desenhar
 function barraPoli() {
   const el = $('#barraPoli'); if (!el) return;
   el.innerHTML = '';
-  el.style.display = S.poli ? '' : 'none';
-  atualizaDica();
+  el.style.display = S.poli || S.colocar ? '' : 'none';
+  atualizaDica(); montarFormas();
+  if (S.colocar) {
+    const it = S.colocar.item;
+    ap(el, h('span', { style: 'font-weight:700;padding:0 8px' }, `${it.nome} · ${fmt(it.w0)} × ${fmt(it.h0)}`),
+      h('button', { class: 'btn sm lite', onclick: () => { S.colocar.rot = (S.colocar.rot + 90) % 360; if (S.colocar.obj) S.colocar.obj.rot = S.colocar.rot; desenhar(); } }, 'Girar 90°'),
+      h('button', { class: 'btn sm lite', onclick: () => { const it2 = S.colocar.item; cancelarColocar(); S.galeria = true; S.galCat = it2.cat; montarGaleria(); } }, 'Trocar peça'),
+      h('button', { class: 'btn sm perigo', onclick: cancelarColocar }, 'Cancelar'));
+    return;
+  }
   if (!S.poli) return;
   const inp = h('input', { inputmode: 'decimal', placeholder: cfg.unidade, id: 'polComp', 'aria-label': 'Comprimento do próximo trecho',
     onkeydown: ev => { if (ev.key === 'Enter') { ev.preventDefault(); trechoDigitado(ev.target); } } });
@@ -851,13 +967,16 @@ function trechoDigitado(inp) {
 function atualizaDica() {
   const el = $('#dica'); if (!el) return;
   const f = S.ferr; let t = '';
-  if (S.poli) t = 'Toque ponto a ponto ou arraste cada trecho. Toque no último ponto para concluir, ou no primeiro (amarelo) para fechar o cômodo.';
+  if (S.colocar) t = 'Toque no desenho onde a peça vai ficar. Perto de uma parede, ela encosta e gira sozinha.';
+  else if (S.poli) t = 'Toque ponto a ponto ou arraste cada trecho. Toque no último ponto para concluir, ou no primeiro (amarelo) para fechar o cômodo.';
   else if (f === 'parede' || f === 'linha') t = 'Toque onde começa e siga ponto a ponto. Com 90° ligado, os trechos ficam retos.';
-  else if (f === 'livre') t = 'Desenhe à mão livre. O traço é suavizado quando você solta.';
+  else if (f === 'livre') t = 'Desenhe à mão livre. Segure a caneta parada no fim do traço para virar reta, retângulo, círculo ou triângulo.';
+  else if (f === 'formas') t = 'Escolha a forma na barra de cima e arraste de um canto ao outro.';
   else if (f === 'ret' || f === 'elipse') t = 'Arraste de um canto ao outro. Um toque cria uma peça de 60 × 60 cm.';
   else if (f === 'cota') t = 'Arraste de um ponto ao outro para medir.';
   else if (f === 'texto') t = 'Toque onde o texto vai ficar.';
   else if (f === 'mao') t = 'Arraste para mover a tela.';
+  else if (S.estudio && !objs().length) t = 'Estúdio: desenhe a peça em tamanho real. A parte de cima é o fundo, o lado que encosta na parede.';
   else if (!objs().length) t = 'Comece pela ferramenta Parede, na barra da esquerda.';
   el.innerHTML = t ? `<span>${esc(t)}</span>` : '';
 }
@@ -865,13 +984,13 @@ function atualizaDica() {
 /* ---------- telas ---------- */
 async function irLista() {
   if (S.poli) finalizarPoli();
-  clearTimeout(_tS); if (S.doc) await DB.put('desenhos', S.doc).catch(() => {});
-  S.tela = 'lista'; S.doc = null; S.poli = null; TELA = null;
+  clearTimeout(_tS); if (S.doc && S.doc.id !== '__estudio') await DB.put('desenhos', S.doc).catch(() => {});
+  S.tela = 'lista'; S.doc = null; S.poli = null; TELA = null; S.estudio = null; S.colocar = null; S.galeria = false;
   S.lista = (await DB.all('desenhos')).sort((a, b) => b.atualizadoEm - a.atualizadoEm);
   render();
 }
 function abrir(doc) {
-  S.doc = doc; S.tela = 'editor'; S.sel = []; S.undo = []; S.redo = []; S.base = snapshot(); S.poli = null;
+  S.doc = doc; S.tela = 'editor'; S.sel = []; S.undo = []; S.redo = []; S.base = snapshot(); S.poli = null; S.colocar = null; S.galeria = false;
   S.ferr = objs().length ? 'sel' : 'parede';
   if (!doc.vista) doc.vista = { s: 1.6, ox: 200, oy: 150, auto: true };
   render();
@@ -880,18 +999,7 @@ function render() {
   const app = $('#app'); app.innerHTML = '';
   app.append(S.tela === 'lista' ? telaLista() : telaEditor());
 }
-function miniatura(d) {
-  const W = 300, H = 200;
-  if (!d.objs.length) return `<svg viewBox="0 0 ${W} ${H}"><rect width="${W}" height="${H}" fill="#fff"/></svg>`;
-  const guarda = S.doc; S.doc = { objs: d.objs, vista: { s: 1, ox: 0, oy: 0 } };
-  const b = limitesDe(d.objs), pad = 16, s = Math.min((W - pad * 2) / Math.max(b.x1 - b.x0, 20), (H - pad * 2) / Math.max(b.y1 - b.y0, 20));
-  const ox = W / 2 - (b.x0 + b.x1) / 2 * s, oy = H / 2 - (b.y0 + b.y1) / 2 * s;
-  S.doc.vista = { s, ox, oy };
-  let g = ''; for (const o of d.objs) g += svgObj(o, s);
-  g = g.replace(/<text[\s\S]*?<\/text>/g, ''); // miniatura sem textos
-  S.doc = guarda;
-  return `<svg viewBox="0 0 ${W} ${H}" font-family="Archivo, system-ui, sans-serif"><rect width="${W}" height="${H}" fill="#fff"/><g transform="matrix(${s} 0 0 ${s} ${ox} ${oy})">${g}</g></svg>`;
-}
+const miniatura = d => miniSVG(d.objs, 300, 200, 16);
 function telaLista() {
   const pg = h('div', { class: 'pagina' },
     h('div', { class: 'marca' },
@@ -900,6 +1008,7 @@ function telaLista() {
     !DB.ok ? h('p', { class: 'hint' }, 'Modo de teste: os desenhos somem ao fechar esta aba.') : null,
     h('div', { class: 'row' },
       h('button', { class: 'btn am', onclick: novoDesenho }, 'Novo desenho'),
+      h('button', { class: 'btn lite', onclick: () => abrirEstudio(null) }, 'Estúdio de peças'),
       h('span', { class: 'sp' }),
       h('button', { class: 'btn lite', onclick: dlgConfig }, 'Configurações'),
       h('button', { class: 'btn lite', onclick: dlgBackup }, 'Backup')));
@@ -940,9 +1049,12 @@ function telaEditor() {
       h('button', { class: 'btn', 'aria-label': 'Diminuir zoom', onclick: () => { zoomEm({ x: TELA.W / 2, y: TELA.H / 2 }, 1 / 1.3); desenhar(); salvar(); }, html: ico('<path d="M5 12h14"/>', 22) }),
       h('button', { class: 'btn', 'aria-label': 'Aumentar zoom', onclick: () => { zoomEm({ x: TELA.W / 2, y: TELA.H / 2 }, 1.3); desenhar(); salvar(); }, html: ico('<path d="M12 5v14M5 12h14"/>', 22) }),
       h('button', { class: 'btn', 'aria-label': 'Enquadrar o desenho', onclick: () => { enquadrar(); desenhar(); salvar(); }, html: ico('<path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"/>', 22) })),
-    h('div', { class: 'barra-poli', id: 'barraPoli', style: 'display:none' }));
+    h('div', { class: 'barra-poli', id: 'barraPoli', style: 'display:none' }),
+    h('div', { class: 'formas', id: 'formas', style: 'display:none', role: 'toolbar', 'aria-label': 'Formas' }),
+    h('div', { class: 'rapida', id: 'rapida', style: 'display:none', role: 'toolbar', 'aria-label': 'Ações da seleção' }),
+    h('div', { class: 'gaveta', id: 'gaveta', style: 'display:none' }));
   const corpo = h('div', { class: 'corpo' + (S.painel ? '' : ' sem-painel'), id: 'corpo' }, palco, h('div', { class: 'painel', id: 'painel', style: S.painel ? '' : 'display:none' }));
-  requestAnimationFrame(() => { iniciarTela(svg, palco); barraTopo(); ferramentas(); painel(); atualizaDica(); });
+  requestAnimationFrame(() => { iniciarTela(svg, palco); barraTopo(); ferramentas(); painel(); atualizaDica(); montarGaleria(); });
   return h('div', { class: 'ed' }, topo, corpo);
 }
 function iniciarTela(svg, palco) {
@@ -966,16 +1078,18 @@ function barraTopo() {
   el.innerHTML = '';
   const tog = (k, rot_, nome) => h('button', { class: 'btn sm' + (cfg[k] ? ' on' : ''), title: nome, 'aria-pressed': cfg[k] ? 'true' : 'false',
     onclick: ev => { cfg[k] = !cfg[k]; salvarCfg(); ev.currentTarget.classList.toggle('on', cfg[k]); ev.currentTarget.setAttribute('aria-pressed', cfg[k]); desenhar(); toast(nome + (cfg[k] ? ': ligado' : ': desligado')); } }, rot_);
-  el.append(
-    h('button', { class: 'btn sm', onclick: irLista }, 'Desenhos'),
-    h('input', { class: 'nome', value: S.doc.nome, 'aria-label': 'Nome do desenho', oninput: e => { S.doc.nome = e.target.value || 'Sem nome'; salvar(); } }),
+  const est = S.estudio;
+  ap(el,
+    est ? h('button', { class: 'btn sm', onclick: () => fecharEstudio(false) }, 'Voltar') : h('button', { class: 'btn sm', onclick: irLista }, 'Desenhos'),
+    est ? h('span', { class: 'selo-estudio' }, 'Estúdio') : null,
+    h('input', { class: 'nome', value: S.doc.nome, 'aria-label': est ? 'Nome da peça' : 'Nome do desenho', oninput: e => { S.doc.nome = e.target.value || 'Sem nome'; if (est) est.nome = S.doc.nome; salvar(); } }),
     h('span', { class: 'sp' }),
     h('button', { class: 'btn ico', id: 'bUndo', title: 'Desfazer', 'aria-label': 'Desfazer', onclick: desfazer, html: ico('<path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 010 12h-3"/>', 22) }),
     h('button', { class: 'btn ico', id: 'bRedo', title: 'Refazer', 'aria-label': 'Refazer', onclick: refazer, html: ico('<path d="M15 14l5-5-5-5"/><path d="M20 9H10a6 6 0 000 12h3"/>', 22) }),
     h('span', { class: 'sep' }),
     tog('grade', 'Grade', 'Grade'), tog('ima', 'Ímã', 'Ímã na grade e nos pontos'), tog('orto', '90°', 'Ângulos retos e 45°'),
     h('span', { class: 'sep' }),
-    h('button', { class: 'btn sm', onclick: dlgExportar }, 'Exportar'),
+    est ? h('button', { class: 'btn sm on', onclick: salvarEstudio }, 'Salvar peça') : h('button', { class: 'btn sm', onclick: dlgExportar }, 'Exportar'),
     h('button', { class: 'btn sm' + (S.painel ? ' on' : ''), onclick: ev => { S.painel = !S.painel; $('#corpo').classList.toggle('sem-painel', !S.painel); $('#painel').style.display = S.painel ? '' : 'none'; ev.currentTarget.classList.toggle('on', S.painel); } }, 'Painel'));
   botoesDesfazer();
 }
@@ -984,9 +1098,19 @@ function ferramentas() {
   el.innerHTML = '';
   for (const f of FERR) {
     if (!f) { el.append(h('hr')); continue; }
-    el.append(h('button', { class: S.ferr === f[0] ? 'on' : '', title: f[1], 'aria-label': f[1], 'aria-pressed': S.ferr === f[0] ? 'true' : 'false', html: ico(f[2]),
-      onclick: () => { if (S.poli && f[0] !== S.ferr) finalizarPoli(); S.ferr = f[0]; if (f[0] !== 'sel') S.sel = []; ferramentas(); desenhar(); painel(); atualizaDica(); } }));
+    const ativo = f[0] === 'biblioteca' ? S.galeria : S.ferr === f[0];
+    el.append(h('button', { class: (ativo ? 'on' : '') + (ativo && S.trava && f[0] !== 'sel' && f[0] !== 'mao' && f[0] !== 'biblioteca' ? ' trava' : ''), title: f[1], 'aria-label': f[1], 'aria-pressed': ativo ? 'true' : 'false', html: ico(f[2]),
+      onclick: () => {
+        if (f[0] === 'biblioteca') { abrirGaleria(); ferramentas(); return; }
+        if (S.colocar) cancelarColocar();
+        if (S.ferr === f[0] && f[0] !== 'sel' && f[0] !== 'mao') { // toque de novo na ferramenta ativa: fixa
+          S.trava = !S.trava; toast(S.trava ? 'Ferramenta fixa: continua ativa depois de cada desenho.' : 'Ferramenta solta: volta para Selecionar depois de cada desenho.'); ferramentas(); return;
+        }
+        if (S.poli && f[0] !== S.ferr) finalizarPoli();
+        S.ferr = f[0]; if (f[0] !== 'sel') S.sel = []; ferramentas(); desenhar(); painel(); atualizaDica();
+      } }));
   }
+  montarFormas();
 }
 
 /* ---------- painel de propriedades ---------- */
@@ -994,9 +1118,10 @@ function alvos() { const s = selObjs(); return s.length ? s : null; }
 function estiloAlvo() { const a = alvos(); return a ? a[0].estilo : (S.padrao[S.ferr] || null); }
 function aplicar(fn, final = true) {
   const a = alvos();
-  if (a) { a.forEach(o => fn(o.estilo, o)); desenhar(); if (final) mudou(false); }
+  if (a) { a.forEach(o => { fn(o.estilo, o); if (o.tipo === 'bloco') o.itens.forEach(f => aplicarFilho(f, fn)); }); desenhar(); if (final) mudou(false); }
   else if (S.padrao[S.ferr]) { fn(S.padrao[S.ferr], null); if (S.poli) fn(S.poli.estilo, S.poli); desenhar(); }
 }
+function aplicarFilho(f, fn) { const vazio = f.estilo.preench === 'none'; fn(f.estilo, f); if (vazio) f.estilo.preench = 'none'; if (f.tipo === 'bloco') f.itens.forEach(g => aplicarFilho(g, fn)); }
 function aplicarCat(c) {
   aplicar((st, ob) => {
     const n = clone(c.e);
@@ -1010,13 +1135,20 @@ function aplicarCat(c) {
 function painel() {
   const el = $('#painel'); if (!el) return;
   el.innerHTML = '';
+  montarRapida();
   const a = alvos(), e = estiloAlvo();
   if (!e) {
     ap(el, h('h2', {}, 'Nada selecionado'),
       h('p', { class: 'hint' }, 'Toque num objeto para editar cor, linha, nome e medidas. Arraste num espaço vazio para selecionar vários de uma vez.'),
       h('h3', {}, 'Como usar'),
-      h('p', { class: 'hint' }, 'A caneta desenha. Um dedo move a tela e dois dedos dão zoom. Segurando o botão da S Pen, a caneta também move a tela.'),
-      h('p', { class: 'hint' }, 'Num objeto selecionado: arraste os quadradinhos para mudar o tamanho, a bolinha amarela para girar e a bolinha preta do meio de um trecho para fazer curva. Toque duas vezes num ponto para apagá-lo.'));
+      h('p', { class: 'hint' }, 'A caneta desenha. Com o botão da S Pen apertado, a caneta seleciona e move, sem trocar de ferramenta.'),
+      h('p', { class: 'hint' }, 'Um dedo move a tela e dois dedos dão zoom. Toque com um dedo num objeto para selecioná-lo; o dedo também arrasta o que está selecionado.'),
+      h('p', { class: 'hint' }, 'Toque com dois dedos para desfazer e com três para refazer.'),
+      h('p', { class: 'hint' }, 'No Traço livre, segure a caneta parada no fim do traço: ele vira reta, retângulo, círculo ou triângulo.'),
+      h('p', { class: 'hint' }, 'Toque de novo na ferramenta ativa para fixá-la: ela continua ativa depois de cada desenho.'),
+      h('p', { class: 'hint' }, 'Num objeto selecionado: os quadradinhos mudam o tamanho, a bolinha amarela gira e a bolinha preta no meio de um trecho faz curva. Toque duas vezes num ponto para apagá-lo.'),
+      h('h3', {}, 'Biblioteca'),
+      h('p', { class: 'hint' }, 'O último botão da barra da esquerda abre móveis, eletros, portas e janelas em tamanho real. Suas peças ficam em "Minhas peças".'));
     return;
   }
   const o = a && a.length === 1 ? a[0] : null;
@@ -1031,7 +1163,7 @@ function painel() {
     CORES.map(c => h('button', { class: 'cor' + (e[chave] === c ? ' on' : ''), style: `background:${c}`, title: c, 'aria-label': 'Cor ' + c, onclick: () => { aplicar(st => { st[chave] = c; st.cat = null; }); painel(); } })),
     h('input', { type: 'color', value: e[chave] === 'none' ? '#ffffff' : e[chave], title: 'Outra cor', 'aria-label': 'Outra cor', oninput: ev => aplicar(st => { st[chave] = ev.target.value; st.cat = null; }, false), onchange: () => { mudou(false); painel(); } }));
   ap(el, h('h3', {}, o && o.tipo === 'texto' ? 'Cor do texto' : 'Cor do traço'), linhaCores('traco', false));
-  const semForma = o && (o.tipo === 'texto' || o.tipo === 'cota');
+  const semForma = o && (o.tipo === 'texto' || o.tipo === 'cota' || o.tipo === 'porta' || o.tipo === 'janela');
   if (!semForma && S.ferr !== 'texto' && S.ferr !== 'cota') {
     ap(el, h('h3', {}, 'Preenchimento'), linhaCores('preench', true));
     if (o && o.pts && !o.fechado && e.preench !== 'none') ap(el, h('p', { class: 'hint' }, 'O preenchimento aparece quando o contorno está fechado.'));
@@ -1044,6 +1176,10 @@ function painel() {
     ap(el, h('h3', {}, 'Tipo de linha'), h('div', { class: 'seg' }, LINHAS.map(([k, n]) => h('button', { class: e.linha === k ? 'on' : '', title: n, 'aria-label': n,
       html: `<svg width="60" height="14"><path d="M4 7H56" stroke="#262A28" stroke-width="3" ${k === 'trac' ? 'stroke-dasharray="10 6"' : k === 'pont' ? 'stroke-dasharray="0.1 7" stroke-linecap="round"' : k === 'tracponto' ? 'stroke-dasharray="12 5 0.1 5" stroke-linecap="round"' : ''}/></svg>`,
       onclick: () => { aplicar(st => { st.linha = k; }); painel(); } }))));
+    const aberta = o ? (o.pts && !o.fechado && o.tipo !== 'parede') : (!a && (S.ferr === 'linha' || S.ferr === 'livre'));
+    if (aberta) ap(el, h('h3', {}, 'Pontas'), h('div', { class: 'seg' }, [['nenhuma', 'Sem ponta', 'M4 7H56'], ['fim', 'Seta no fim', 'M4 7H50M58 7L46 1V13Z'], ['ambas', 'Setas nas duas pontas', 'M10 7H50M58 7L46 1V13ZM2 7L14 1V13Z'], ['bola', 'Bolinhas', 'M8 7H52']].map(([k, n, d]) =>
+      h('button', { class: (e.pontas || 'nenhuma') === k ? 'on' : '', title: n, 'aria-label': n, html: `<svg width="60" height="14"><path d="${d}" stroke="#262A28" stroke-width="3" fill="#262A28"/>${k === 'bola' ? '<circle cx="6" cy="7" r="4" fill="#262A28"/><circle cx="54" cy="7" r="4" fill="#262A28"/>' : ''}</svg>`,
+        onclick: () => { aplicar(st => { st.pontas = k; }); painel(); } }))));
   }
   if (!a) return;
 
@@ -1053,10 +1189,10 @@ function painel() {
         slider('Tamanho', o.tam, 8, 72, 1, ' px', x => { o.tam = x; desenhar(); }));
     } else {
       ap(el, h('h3', {}, o.tipo === 'parede' && o.fechado ? 'Nome do cômodo' : 'Nome'),
-        h('input', { class: 'i', id: 'pNome', value: o.nome, placeholder: o.tipo === 'parede' ? 'Ex.: Cozinha' : o.tipo === 'ret' ? 'Ex.: Balcão da pia' : 'Nome',
+        h('input', { class: 'i', id: 'pNome', value: o.nome, placeholder: o.tipo === 'parede' ? 'Ex.: Cozinha' : o.tipo === 'ret' || o.tipo === 'bloco' ? 'Ex.: Balcão da pia' : 'Nome',
           oninput: ev => { o.nome = ev.target.value; desenhar(); }, onchange: () => mudou(false), onkeydown: ev => { if (ev.key === 'Enter') ev.target.blur(); } }),
         slider('Tamanho do nome', o.tamNome || 15, 8, 48, 1, ' px', x => { o.tamNome = x; desenhar(); }));
-      if (o.tipo !== 'cota') ap(el, h('label', { class: 'chk' }, h('input', { type: 'checkbox', checked: !!o.med, onchange: ev => { o.med = ev.target.checked; desenhar(); mudou(false); } }), 'Mostrar medidas'));
+      if (o.tipo !== 'cota' && o.tipo !== 'porta' && o.tipo !== 'janela') ap(el, h('label', { class: 'chk' }, h('input', { type: 'checkbox', checked: !!o.med, onchange: ev => { o.med = ev.target.checked; desenhar(); mudou(false); } }), 'Mostrar medidas'));
     }
     painelGeometria(el, o);
   }
@@ -1069,7 +1205,7 @@ function painel() {
     h('button', { class: 'btn sm lite', onclick: () => ordem(-1) }, 'Enviar para trás'),
     h('button', { class: 'btn sm perigo', style: 'grid-column:1/-1', onclick: excluirSel }, 'Excluir')));
 }
-const rotuloTipo = o => ({ parede: o.fechado ? 'Cômodo' : 'Parede', linha: 'Linha', livre: 'Traço livre', ret: 'Retângulo', elipse: o.w === o.h ? 'Círculo' : 'Elipse', texto: 'Texto', cota: 'Cota' }[o.tipo]);
+const rotuloTipo = o => ({ parede: o.fechado ? 'Cômodo' : 'Parede', linha: o.forma || 'Linha', bloco: 'Peça', porta: 'Porta', janela: 'Janela', livre: 'Traço livre', ret: 'Retângulo', elipse: o.w === o.h ? 'Círculo' : 'Elipse', texto: 'Texto', cota: 'Cota' }[o.tipo]);
 function slider(rot_, val, min, max, step, suf, onv) {
   const b = h('b', { class: 'num' }, fmtNum(val) + suf);
   return h('div', {}, rot_ ? h('div', { class: 'hint', style: 'margin:8px 0 0' }, rot_) : null,
@@ -1083,6 +1219,37 @@ function campo(rot_, val, onv, id) {
 const girarPara = (o, x) => { const n = parseFloat(String(x).replace(',', '.')); if (!isNaN(n)) { o.rot = ((n % 360) + 360) % 360; mudou(); desenhar(); } };
 function painelGeometria(el, o) {
   const u = cfg.unidade;
+  if (o.tipo === 'porta' || o.tipo === 'janela') {
+    const largura = x => { const n = parse(x); if (n > 0) { const c = centro(o); o.w = n; o.x = f2(c.x - n / 2); mudou(); desenhar(); } };
+    ap(el, h('h3', {}, `Medidas (${u})`),
+      h('div', { class: 'duo' },
+        campo(o.tipo === 'porta' ? 'Largura do vão' : 'Largura da janela', toIn(o.w), largura, 'gW'),
+        campo('Espessura da parede', toIn(o.h), x => { const n = parse(x); if (n > 0) { const c = centro(o); o.h = n; o.y = f2(c.y - n / 2); mudou(); desenhar(); } }, 'gH')),
+      o.tipo === 'porta' ? h('div', {}, h('h3', {}, 'Modelo'), h('div', { class: 'seg', style: 'grid-template-columns:repeat(3,1fr)' },
+        [['giro', 'De giro'], ['dupla', 'Duas folhas'], ['correr', 'De correr']].map(([k, n]) => h('button', { class: o.modelo === k ? 'on' : '', style: 'font-size:14px;font-weight:600', onclick: () => { o.modelo = k; mudou(); desenhar(); } }, n)))) : null,
+      h('div', { class: 'row', style: 'margin-top:10px' },
+        o.tipo === 'porta' && o.modelo === 'giro' ? h('button', { class: 'btn sm lite', onclick: () => { o.espX = !o.espX; mudou(); desenhar(); } }, 'Trocar lado da dobradiça') : null,
+        o.tipo === 'porta' && o.modelo !== 'correr' ? h('button', { class: 'btn sm lite', onclick: () => { o.inv = !o.inv; mudou(); desenhar(); } }, 'Abrir para o outro lado') : null,
+        h('button', { class: 'btn sm lite', onclick: () => { girar90(o); mudou(); desenhar(); } }, 'Girar 90°')),
+      h('p', { class: 'hint' }, 'Arraste até uma parede: a peça entra nela e pega a espessura sozinha.'));
+    return;
+  }
+  if (o.tipo === 'bloco') {
+    ap(el, h('h3', {}, `Tamanho (${u})`),
+      h('div', { class: 'duo' },
+        campo('Largura', toIn(o.w), x => { const n = parse(x); if (n > 0) { const c = centro(o); o.w = n; o.x = f2(c.x - n / 2); mudou(); desenhar(); } }, 'gW'),
+        campo('Profundidade', toIn(o.h), x => { const n = parse(x); if (n > 0) { const c = centro(o); o.h = n; o.y = f2(c.y - n / 2); mudou(); desenhar(); } }, 'gH')),
+      campo('Girar (graus)', String(o.rot || 0), x => girarPara(o, x), 'gR'),
+      (o.w !== o.w0 || o.h !== o.h0) ? h('p', { class: 'hint', style: 'margin:0 0 6px' }, `Tamanho original: ${fmt(o.w0)} × ${fmt(o.h0)} ${u}`) : null,
+      h('div', { class: 'row' },
+        h('button', { class: 'btn sm lite', onclick: () => { girar90(o); mudou(); desenhar(); } }, 'Girar 90°'),
+        h('button', { class: 'btn sm lite', onclick: () => { espelhar(o); mudou(); desenhar(); } }, 'Espelhar'),
+        (o.w !== o.w0 || o.h !== o.h0) ? h('button', { class: 'btn sm lite', onclick: () => { const c = centro(o); o.w = o.w0; o.h = o.h0; o.x = f2(c.x - o.w / 2); o.y = f2(c.y - o.h / 2); mudou(); desenhar(); } }, 'Tamanho original') : null,
+        h('button', { class: 'btn sm lite', onclick: () => desagrupar(o) }, 'Desagrupar'),
+        !S.estudio ? h('button', { class: 'btn sm lite', onclick: salvarSelComoPeca }, 'Salvar peça') : null),
+      h('p', { class: 'hint' }, 'Arraste perto de uma parede: o fundo da peça encosta nela e gira sozinho. Desligue o Ímã para soltar livre.'));
+    return;
+  }
   if (o.tipo === 'ret' || o.tipo === 'elipse') {
     ap(el, h('h3', {}, `Tamanho (${u})`),
       h('div', { class: 'duo' },
@@ -1156,6 +1323,508 @@ function excluirSel() {
   S.doc.objs = objs().filter(o => !ids.has(o.id)); S.sel = []; mudou(); desenhar();
 }
 
+/* ---------- peças, portas e janelas ---------- */
+// peça (bloco) = grupo de objetos em coordenadas próprias (0..w0, 0..h0), desenhado no tamanho w × h.
+// Convenção: a parte de cima da peça é o fundo, o lado que encosta na parede.
+function transfBloco(b) {
+  const sx = b.w / (b.w0 || 1), sy = b.h / (b.h0 || 1), c = { x: b.x + b.w / 2, y: b.y + b.h / 2 }, r = b.rot || 0, m = !!b.espX;
+  return { sx, sy, r, m, P: p => rot({ x: b.x + (m ? b.w0 - p.x : p.x) * sx, y: b.y + p.y * sy }, r, c) };
+}
+function mundoFilho(f, t) {
+  const o = clone(f), P_ = t.P;
+  if (o.pts) o.pts = o.pts.map(p => { const q = P_(p); q.c = p.c ? P_(p.c) : null; return q; });
+  else if (o.tipo === 'cota') { o.a = P_(o.a); o.b = P_(o.b); if (t.m) o.off = -o.off; }
+  else if (o.tipo === 'texto') { const q = P_(o); o.x = q.x; o.y = q.y; o.rot = ((o.rot || 0) + t.r) % 360; }
+  else if (ehCaixa(o)) {
+    let cr = o.rot || 0;
+    const deitado = Math.round((((cr % 180) + 180) % 180) / 90) % 2;
+    const c = P_({ x: o.x + o.w / 2, y: o.y + o.h / 2 });
+    o.w *= deitado ? t.sy : t.sx; o.h *= deitado ? t.sx : t.sy;
+    if (t.m) { cr = -cr; if (o.tipo === 'bloco' || o.tipo === 'porta') o.espX = !o.espX; }
+    o.rot = (((cr + t.r) % 360) + 360) % 360; o.x = c.x - o.w / 2; o.y = c.y - o.h / 2;
+  }
+  return o;
+}
+function cantosPorta(o) {
+  const c = { x: o.x + o.w / 2, y: o.y + o.h / 2 };
+  let y0 = o.y, y1 = o.y + o.h;
+  if (o.tipo === 'porta' && o.modelo !== 'correr') { const R_ = o.modelo === 'dupla' ? o.w / 2 : o.w; if (o.inv) y0 -= R_; else y1 += R_; }
+  return [{ x: o.x, y: y0 }, { x: o.x + o.w, y: y0 }, { x: o.x + o.w, y: y1 }, { x: o.x, y: y1 }].map(p => rot(p, o.rot || 0, c));
+}
+function svgPortaJanela(o, s, w, tr) {
+  const cx = o.x + o.w / 2, cy = o.y + o.h / 2, x0 = o.x, x1 = o.x + o.w, y0 = o.y, y1 = o.y + o.h;
+  const ln = (d, sw, extra = '') => `<path d="${d}" stroke="${tr}" stroke-width="${sw}" fill="none" stroke-linecap="butt" ${extra} pointer-events="none"/>`;
+  let g = `<g ${o.rot ? `transform="rotate(${o.rot} ${cx} ${cy})"` : ''}>`;
+  g += `<rect x="${x0}" y="${y0 - 0.6}" width="${o.w}" height="${o.h + 1.2}" fill="${COR_FUNDO}" pointer-events="none"/>`; // vão na parede
+  g += ln(`M${x0} ${y0}V${y1}M${x1} ${y0}V${y1}`, w * 1.4);
+  if (o.tipo === 'janela') {
+    g += ln(`M${x0} ${y0}H${x1}M${x0} ${y1}H${x1}`, w * 0.7);
+    g += ln(`M${x0} ${y0 + o.h * 0.38}H${x1}M${x0} ${y0 + o.h * 0.62}H${x1}`, w);
+  } else if (o.modelo === 'correr') {
+    const lw = o.w * 0.56, t = o.h * 0.22;
+    g += `<rect x="${x0}" y="${y0 + o.h * 0.2}" width="${lw}" height="${t}" fill="none" stroke="${tr}" stroke-width="${w}" pointer-events="none"/>`;
+    g += `<rect x="${x1 - lw}" y="${y0 + o.h * 0.58}" width="${lw}" height="${t}" fill="none" stroke="${tr}" stroke-width="${w}" pointer-events="none"/>`;
+  } else {
+    const dir = o.inv ? -1 : 1, fy = o.inv ? y0 : y1;
+    const folhas = o.modelo === 'dupla' ? [[x0, o.w / 2, 1], [x1, o.w / 2, -1]] : [[o.espX ? x1 : x0, o.w, o.espX ? -1 : 1]];
+    for (const [hx, W, lado] of folhas) {
+      const sx = hx, sy = fy + dir * W, ex = hx + lado * W, ey = fy;
+      const sweep = ((sx - hx) * (ey - fy) - (sy - fy) * (ex - hx)) > 0 ? 1 : 0;
+      g += ln(`M${hx} ${fy}L${sx} ${sy}`, w * 2.2);
+      g += ln(`M${sx} ${sy}A${W} ${W} 0 0 ${sweep} ${ex} ${ey}`, w * 0.8, `stroke-dasharray="${5 / s} ${3.5 / s}"`);
+    }
+  }
+  g += `<rect x="${x0}" y="${y0}" width="${o.w}" height="${o.h}" fill="transparent" stroke="transparent" stroke-width="${Math.max(0, 22 / s - o.h)}" pointer-events="all"/>`;
+  return g + '</g>';
+}
+// Encosta a peça na parede mais próxima: o fundo da peça fica na face da parede.
+// Porta e janela entram no meio da parede e pegam a espessura dela.
+function encostar(o) {
+  if (!cfg.ima) return null;
+  const c = { x: o.x + o.w / 2, y: o.y + o.h / 2 }, naParede = o.tipo === 'porta' || o.tipo === 'janela', s = v().s;
+  let melhor = null;
+  for (const pa of objs()) {
+    if (pa.tipo !== 'parede' || pa.id === o.id) continue;
+    const t = espW(pa.estilo, s);
+    for (const [i, j] of segs(pa)) {
+      if (pa.pts[i].c) continue;
+      const a = pa.pts[i], b = pa.pts[j], L = dist(a, b); if (L < 1) continue;
+      const ux = (b.x - a.x) / L, uy = (b.y - a.y) / L, tt = (c.x - a.x) * ux + (c.y - a.y) * uy;
+      if (tt < -o.w / 2 || tt > L + o.w / 2) continue;
+      const d = -(c.x - a.x) * uy + (c.y - a.y) * ux;
+      const lim = naParede ? t / 2 + 45 / s : o.h / 2 + t / 2 + 45 / s;
+      if (Math.abs(d) > lim) continue;
+      if (!melhor || Math.abs(d) < Math.abs(melhor.d)) melhor = { a, ux, uy, tt, d, t, L };
+    }
+  }
+  if (!melhor) return null;
+  const { a, ux, uy, d, t, L } = melhor, sg = d >= 0 ? 1 : -1, n = { x: -uy * sg, y: ux * sg };
+  const min = t / 2 + o.w / 2, max = L - t / 2 - o.w / 2;
+  const tt = max >= min ? clamp(melhor.tt, min, max) : L / 2;
+  const base = { x: a.x + ux * tt, y: a.y + uy * tt };
+  let C = base;
+  if (naParede) o.h = f2(t); else C = { x: base.x + n.x * (t / 2 + o.h / 2), y: base.y + n.y * (t / 2 + o.h / 2) };
+  o.rot = ((Math.round(Math.atan2(-n.x, n.y) * 180 / Math.PI) % 360) + 360) % 360;
+  o.x = f2(C.x - o.w / 2); o.y = f2(C.y - o.h / 2);
+  const livre = L - t;
+  return { livre, cabe: o.w <= livre + 0.5 };
+}
+function espelhar(o) {
+  if (o.pts) { const b = bbox(o), cx = (b.x0 + b.x1) / 2; o.pts.forEach(p => { p.x = f2(2 * cx - p.x); if (p.c) p.c.x = 2 * cx - p.c.x; }); }
+  else if (o.tipo === 'bloco' || o.tipo === 'porta') o.espX = !o.espX;
+  else if (ehCaixa(o)) o.rot = (360 - (o.rot || 0)) % 360;
+  else if (o.tipo === 'cota') { const cx = (o.a.x + o.b.x) / 2; o.a.x = 2 * cx - o.a.x; o.b.x = 2 * cx - o.b.x; o.off = -o.off; }
+}
+function girar90(o) {
+  if (ehCaixa(o) || o.tipo === 'texto') { o.rot = ((o.rot || 0) + 90) % 360; return; }
+  const b = bbox(o), c = { x: (b.x0 + b.x1) / 2, y: (b.y0 + b.y1) / 2 };
+  if (o.pts) o.pts.forEach(p => { const q = rot(p, 90, c); p.x = f2(q.x); p.y = f2(q.y); if (p.c) p.c = rot(p.c, 90, c); });
+  else if (o.tipo === 'cota') { o.a = rot(o.a, 90, c); o.b = rot(o.b, 90, c); }
+}
+const selEditaveis = () => selObjs().filter(o => !o.bloq);
+function girarSel() { selEditaveis().forEach(girar90); mudou(); desenhar(); }
+function espelharSel() { selEditaveis().forEach(espelhar); mudou(); desenhar(); }
+function agruparSel() {
+  const sel = selObjs(); if (sel.length < 2) return;
+  const b = limitesDe(sel), ids = new Set(sel.map(o => o.id));
+  const itens = sel.map(o => { const c = clone(o); mover(c, -b.x0, -b.y0); return c; });
+  const w = f2(b.x1 - b.x0), hh = f2(b.y1 - b.y0);
+  const bl = { id: uid(), tipo: 'bloco', nome: '', x: f2(b.x0), y: f2(b.y0), w, h: hh, w0: w, h0: hh, rot: 0, espX: false, itens, estilo: clone(sel[0].estilo), med: false, tamNome: 11 };
+  const idx = objs().findIndex(o => ids.has(o.id));
+  S.doc.objs = objs().filter(o => !ids.has(o.id)); S.doc.objs.splice(Math.min(idx, S.doc.objs.length), 0, bl);
+  S.sel = [bl.id]; mudou(); desenhar(); toast('Agrupado: agora é uma peça só.');
+}
+function desagrupar(o) {
+  const t = transfBloco(o), novos = o.itens.map(f => { const n = mundoFilho(f, t); n.id = uid(); return n; });
+  const idx = objs().indexOf(o); S.doc.objs.splice(idx, 1, ...novos);
+  S.sel = novos.map(n => n.id); mudou(); desenhar(); toast('Desagrupado.');
+}
+function pecaDaSelecao() {
+  const sel = selObjs(); if (!sel.length) return null;
+  if (sel.length === 1 && sel[0].tipo === 'bloco') {
+    const o = sel[0], t = transfBloco({ ...o, x: 0, y: 0, rot: 0 });
+    return { itens: o.itens.map(f => { const n = mundoFilho(f, t); n.id = uid(); return n; }), w0: o.w, h0: o.h, nome: o.nome };
+  }
+  const b = limitesDe(sel);
+  return { itens: sel.map(o => { const c = clone(o); c.id = uid(); c.bloq = false; mover(c, -b.x0, -b.y0); return c; }), w0: f2(b.x1 - b.x0), h0: f2(b.y1 - b.y0), nome: sel.length === 1 ? sel[0].nome : '' };
+}
+
+/* ---------- biblioteca de móveis e eletros ---------- */
+const BIB_CATS = ['Cozinha', 'Dormitório', 'Sala', 'Banheiro', 'Lavanderia', 'Escritório', 'Portas e janelas', 'Minhas peças'];
+const eP = (cat, extra) => ({ ...estiloCat(cat), esp: 1.5, un: 'px', linha: 'solida', ...extra });
+const R_ = (x, y, w, h, e, raio = 0) => ({ id: uid(), tipo: 'ret', nome: '', x, y, w, h, rot: 0, raio, estilo: clone(e), med: false });
+const E_ = (cx, cy, rx, ry, e) => ({ id: uid(), tipo: 'elipse', nome: '', x: cx - rx, y: cy - ry, w: 2 * rx, h: 2 * ry, rot: 0, estilo: clone(e), med: false });
+const L_ = (pts, e, fechado = false) => ({ id: uid(), tipo: 'linha', nome: '', fechado, med: false, estilo: clone(e), pts: pts.map(([x, y, cx, cy]) => ({ x, y, c: cx != null ? { x: cx, y: cy } : null })) });
+function peca(cat, nome, w, h, fn, cor = 'movel') {
+  const c = eP(cor), d = eP(cor, { preench: 'none', esp: 1 });
+  return { id: 'b:' + nome, cat, nome, w0: w, h0: h, itens: fn(w, h, c, d), fixo: true };
+}
+const param = (nome, p) => ({ id: 'b:' + nome, cat: 'Portas e janelas', nome, w0: p.w, h0: p.h, param: p, fixo: true });
+const cadeira = (x, y, c, d, costas) => {
+  const bk = { cima: [[x + 5, y + 6], [x + 37, y + 6]], baixo: [[x + 5, y + 36], [x + 37, y + 36]], esq: [[x + 6, y + 5], [x + 6, y + 37]], dir: [[x + 36, y + 5], [x + 36, y + 37]] }[costas];
+  return [R_(x, y, 42, 42, c, 5), L_(bk, d)];
+};
+const cama = (nome, w, h, travs) => peca('Dormitório', nome, w, h, (w, h, c, d) => [
+  R_(0, 0, w, h, c, 3),
+  ...(travs === 1 ? [R_(10, 7, w - 20, 26, d, 6)] : [R_(7, 7, (w - 21) / 2, 26, d, 6), R_(w / 2 + 3.5, 7, (w - 21) / 2, 26, d, 6)]),
+  L_([[0, 44], [w, 44]], d), L_([[w * 0.55, 44], [w, 44 + w * 0.45]], d)]);
+const guardaRoupa = (portas, w) => peca('Dormitório', `Guarda-roupa ${portas} portas`, w, 58, (w, h, c, d) => [
+  R_(0, 0, w, h, c, 0), L_([[5, h / 2], [w - 5, h / 2]], { ...d, linha: 'trac' }), L_([[0, h - 4], [w, h - 4]], d),
+  ...Array.from({ length: portas - 1 }, (_, k) => L_([[w * (k + 1) / portas, h - 4], [w * (k + 1) / portas, h]], d))]);
+const sofa = (nome, w, h, lugares) => peca('Sala', nome, w, h, (w, h, c, d) => [
+  R_(0, 0, w, h, c, 8), L_([[18, 22], [w - 18, 22]], d), L_([[18, 22], [18, h]], d), L_([[w - 18, 22], [w - 18, h]], d),
+  ...Array.from({ length: lugares - 1 }, (_, k) => L_([[18 + (w - 36) * (k + 1) / lugares, 22], [18 + (w - 36) * (k + 1) / lugares, h]], d))]);
+const bocas = (w, h, d, lista, r) => lista.map(([a, b, rr]) => E_(w * a, h * b, rr || r, rr || r, d));
+const BIBLIOTECA = [
+  // Cozinha
+  peca('Cozinha', 'Geladeira', 70, 72, (w, h, c, d) => [R_(0, 0, w, h, c, 2), L_([[2, h - 7], [w - 2, h - 7]], d), R_(w * 0.6, h - 5.5, w * 0.28, 2.2, d, 1)], 'eletro'),
+  peca('Cozinha', 'Geladeira duplex', 90, 75, (w, h, c, d) => [R_(0, 0, w, h, c, 2), L_([[2, h - 7], [w - 2, h - 7]], d), L_([[w / 2, h - 7], [w / 2, h]], d)], 'eletro'),
+  peca('Cozinha', 'Fogão 4 bocas', 60, 60, (w, h, c, d) => [R_(0, 0, w, h, c, 2), R_(3, h - 10, w - 6, 7, d, 1), ...bocas(w, h, d, [[.3, .3], [.7, .3], [.3, .62], [.7, .62]], 7.5)], 'eletro'),
+  peca('Cozinha', 'Fogão 5 bocas', 76, 60, (w, h, c, d) => [R_(0, 0, w, h, c, 2), R_(3, h - 10, w - 6, 7, d, 1), ...bocas(w, h, d, [[.2, .28], [.8, .28], [.2, .64], [.8, .64], [.5, .46, 10]], 7.5)], 'eletro'),
+  peca('Cozinha', 'Cooktop 4 bocas', 58, 50, (w, h, c, d) => [R_(0, 0, w, h, c, 3), ...bocas(w, h, d, [[.28, .3], [.72, .3], [.28, .7], [.72, .7]], 7.5)], 'eletro'),
+  peca('Cozinha', 'Cooktop 5 bocas', 75, 50, (w, h, c, d) => [R_(0, 0, w, h, c, 3), ...bocas(w, h, d, [[.18, .3], [.82, .3], [.18, .7], [.82, .7], [.5, .5, 10]], 7)], 'eletro'),
+  peca('Cozinha', 'Forno de embutir', 60, 55, (w, h, c, d) => [R_(0, 0, w, h, c, 1), R_(4, 4, w - 8, h - 14, d, 2), L_([[4, h - 5], [w - 4, h - 5]], d)], 'eletro'),
+  peca('Cozinha', 'Micro-ondas', 48, 36, (w, h, c, d) => [R_(0, 0, w, h, c, 2), R_(3, 3, w * 0.64, h - 6, d, 2), R_(w * 0.76, 5, w * 0.17, h - 10, d, 1)], 'eletro'),
+  peca('Cozinha', 'Lava-louças', 60, 60, (w, h, c, d) => [R_(0, 0, w, h, c, 1), R_(4, 4, w - 8, h - 12, d, 2), L_([[4, h - 4], [w - 4, h - 4]], d)], 'eletro'),
+  peca('Cozinha', 'Coifa', 90, 50, (w, h, c, d) => [R_(0, 0, w, h, { ...c, linha: 'trac', preench: 'none' }, 0), R_(w * 0.3, 0, w * 0.4, h * 0.4, d, 0)], 'eletro'),
+  peca('Cozinha', 'Pia com cuba', 120, 60, (w, h, c, d) => { const hd = eP('hidraulica', { preench: 'none', esp: 1 }); return [R_(0, 0, w, h, c, 1), R_(w / 2 - 25, 10, 50, 38, hd, 5), E_(w / 2, 31, 2.5, 2.5, hd), E_(w / 2, 5, 2.5, 2.5, hd)]; }),
+  peca('Cozinha', 'Pia com cuba dupla', 160, 60, (w, h, c, d) => { const hd = eP('hidraulica', { preench: 'none', esp: 1 }); return [R_(0, 0, w, h, c, 1), R_(w / 2 - 44, 10, 40, 38, hd, 5), R_(w / 2 + 4, 10, 40, 38, hd, 5), E_(w / 2 - 24, 31, 2.5, 2.5, hd), E_(w / 2 + 24, 31, 2.5, 2.5, hd), E_(w / 2, 5, 2.5, 2.5, hd)]; }),
+  peca('Cozinha', 'Módulo inferior', 80, 60, (w, h, c, d) => [R_(0, 0, w, h, c, 0), L_([[0, h - 3], [w, h - 3]], d), L_([[w / 2, h - 3], [w / 2, h]], d)]),
+  peca('Cozinha', 'Módulo aéreo', 80, 35, (w, h, c, d) => [R_(0, 0, w, h, { ...c, preench: 'none', linha: 'trac' }, 0), L_([[0, 0], [w, h]], { ...d, linha: 'trac' })]),
+  peca('Cozinha', 'Torre quente', 60, 60, (w, h, c, d) => [R_(0, 0, w, h, c, 0), R_(5, 5, w - 10, h - 10, d, 0), L_([[5, 5], [w - 5, h - 5]], d), L_([[w - 5, 5], [5, h - 5]], d)]),
+  peca('Cozinha', 'Mesa 4 lugares', 120, 170, (w, h, c, d) => [...cadeira(w * .28 - 21, 2, c, d, 'cima'), ...cadeira(w * .72 - 21, 2, c, d, 'cima'), ...cadeira(w * .28 - 21, h - 44, c, d, 'baixo'), ...cadeira(w * .72 - 21, h - 44, c, d, 'baixo'), R_(0, 45, w, 80, c, 3)]),
+  peca('Cozinha', 'Mesa redonda 4 lugares', 170, 170, (w, h, c, d) => [...cadeira(64, 2, c, d, 'cima'), ...cadeira(64, 126, c, d, 'baixo'), ...cadeira(2, 64, c, d, 'esq'), ...cadeira(126, 64, c, d, 'dir'), E_(85, 85, 50, 50, c)]),
+  peca('Cozinha', 'Banqueta', 40, 40, (w, h, c, d) => [E_(20, 20, 20, 20, c), E_(20, 20, 13, 13, d)]),
+  // Dormitório
+  cama('Cama de solteiro', 88, 188, 1), cama('Cama de casal', 138, 188, 2), cama('Cama queen', 158, 198, 2), cama('Cama king', 193, 203, 2),
+  peca('Dormitório', 'Berço', 70, 130, (w, h, c, d) => [R_(0, 0, w, h, c, 2), R_(5, 5, w - 10, h - 10, { ...d, linha: 'trac' }, 2)]),
+  peca('Dormitório', 'Criado-mudo', 45, 40, (w, h, c, d) => [R_(0, 0, w, h, c, 2), L_([[4, h - 8], [w - 4, h - 8]], d)]),
+  guardaRoupa(2, 100), guardaRoupa(3, 150), guardaRoupa(4, 200), guardaRoupa(6, 270),
+  peca('Dormitório', 'Cômoda', 100, 50, (w, h, c, d) => [R_(0, 0, w, h, c, 1), L_([[0, h - 4], [w, h - 4]], d), L_([[w / 2, h - 4], [w / 2, h]], d)]),
+  peca('Dormitório', 'Escrivaninha', 120, 60, (w, h, c, d) => [R_(0, 0, w, h, c, 1)]),
+  peca('Dormitório', 'Penteadeira', 100, 45, (w, h, c, d) => [R_(0, 0, w, h, c, 1), L_([[w * 0.2, 4], [w * 0.8, 4]], { ...d, esp: 2.5 })]),
+  // Sala
+  sofa('Sofá 2 lugares', 150, 85, 2), sofa('Sofá 3 lugares', 210, 90, 3),
+  peca('Sala', 'Sofá de canto', 250, 200, (w, h, c, d) => [L_([[0, 0], [w, 0], [w, h], [w - 90, h], [w - 90, 90], [0, 90]], c, true), L_([[18, 22], [w - 22, 22], [w - 22, h - 18]], d), L_([[18, 22], [18, 90]], d), L_([[w - 90, h - 18], [w - 22, h - 18]], d), L_([[w - 90, 90], [w - 22, 22]], d)]),
+  peca('Sala', 'Poltrona', 80, 80, (w, h, c, d) => [R_(0, 0, w, h, c, 8), L_([[16, 20], [w - 16, 20]], d), L_([[16, 20], [16, h]], d), L_([[w - 16, 20], [w - 16, h]], d)]),
+  peca('Sala', 'Rack', 180, 45, (w, h, c, d) => [R_(0, 0, w, h, c, 1), L_([[w / 3, 0], [w / 3, h]], d), L_([[2 * w / 3, 0], [2 * w / 3, h]], d)]),
+  peca('Sala', 'TV 55"', 124, 8, (w, h, c, d) => [R_(0, 0, w, h, c, 1)], 'eletro'),
+  peca('Sala', 'TV 65"', 146, 8, (w, h, c, d) => [R_(0, 0, w, h, c, 1)], 'eletro'),
+  peca('Sala', 'Mesa de centro', 100, 60, (w, h, c, d) => [R_(0, 0, w, h, c, 8)]),
+  peca('Sala', 'Mesa de jantar 6 lugares', 180, 170, (w, h, c, d) => [...[30, 90, 150].flatMap(x => [...cadeira(x - 21, 2, c, d, 'cima'), ...cadeira(x - 21, h - 44, c, d, 'baixo')]), R_(0, 45, w, 80, c, 3)]),
+  peca('Sala', 'Aparador', 120, 40, (w, h, c, d) => [R_(0, 0, w, h, c, 1)]),
+  peca('Sala', 'Estante', 100, 35, (w, h, c, d) => [R_(0, 0, w, h, c, 0), L_([[w / 2, 0], [w / 2, h]], d)]),
+  // Banheiro
+  peca('Banheiro', 'Vaso sanitário', 38, 68, (w, h, c, d) => [R_(2, 0, 34, 18, c, 3), E_(19, 44, 16, 23, c), E_(19, 46, 10, 15, d)], 'hidraulica'),
+  peca('Banheiro', 'Bidê', 36, 55, (w, h, c, d) => [E_(18, 30, 17, 24, c), E_(18, 31, 10, 16, d), E_(18, 7, 2.5, 2.5, d)], 'hidraulica'),
+  peca('Banheiro', 'Cuba de apoio', 45, 35, (w, h, c, d) => [E_(w / 2, h / 2, w / 2, h / 2, c), E_(w / 2, h / 2, 2.5, 2.5, d)], 'hidraulica'),
+  peca('Banheiro', 'Bancada com cuba', 80, 50, (w, h, c, d) => { const hd = eP('hidraulica'), hl = eP('hidraulica', { preench: 'none', esp: 1 }); return [R_(0, 0, w, h, c, 1), E_(w / 2, 25, 20, 15, hd), E_(w / 2, 25, 2.5, 2.5, hl), E_(w / 2, 5, 2.5, 2.5, hl)]; }),
+  peca('Banheiro', 'Box 90 × 90', 90, 90, (w, h, c, d) => [R_(0, 0, w, h, c, 0), L_([[0, 0], [w, h]], { ...d, linha: 'trac' }), L_([[w, 0], [0, h]], { ...d, linha: 'trac' }), E_(w / 2, h / 2, 3, 3, d)], 'hidraulica'),
+  peca('Banheiro', 'Box 80 × 120', 80, 120, (w, h, c, d) => [R_(0, 0, w, h, c, 0), L_([[0, 0], [w, h]], { ...d, linha: 'trac' }), L_([[w, 0], [0, h]], { ...d, linha: 'trac' }), E_(w / 2, h / 2, 3, 3, d)], 'hidraulica'),
+  peca('Banheiro', 'Banheira', 170, 75, (w, h, c, d) => [R_(0, 0, w, h, c, 4), R_(7, 7, w - 14, h - 14, d, 22), E_(20, h / 2, 3, 3, d)], 'hidraulica'),
+  // Lavanderia
+  peca('Lavanderia', 'Máquina de lavar', 60, 65, (w, h, c, d) => [R_(0, 0, w, h, c, 3), R_(3, 3, w - 6, 9, d, 1), E_(w / 2, h * 0.58, w * 0.33, w * 0.33, d)], 'eletro'),
+  peca('Lavanderia', 'Secadora', 60, 60, (w, h, c, d) => [R_(0, 0, w, h, c, 3), R_(3, 3, w - 6, 9, d, 1), E_(w / 2, h * 0.58, w * 0.3, w * 0.3, d)], 'eletro'),
+  peca('Lavanderia', 'Tanque', 60, 55, (w, h, c, d) => [R_(0, 0, w, h, c, 2), R_(5, 5, w - 10, h - 14, d, 6), E_(w / 2, h / 2 - 2, 2.5, 2.5, d)], 'hidraulica'),
+  peca('Lavanderia', 'Aquecedor a gás', 40, 30, (w, h, c, d) => [R_(0, 0, w, h, c, 3), E_(w / 2, h / 2, 8, 8, d)], 'eletrica'),
+  peca('Lavanderia', 'Varal de teto', 120, 50, (w, h, c, d) => [R_(0, 0, w, h, { ...c, preench: 'none', linha: 'trac' }, 0), ...[1, 2, 3, 4].map(k => L_([[0, h * k / 5], [w, h * k / 5]], d))]),
+  // Escritório
+  peca('Escritório', 'Mesa de escritório', 140, 70, (w, h, c, d) => [R_(0, 0, w, h, c, 1)]),
+  peca('Escritório', 'Mesa em L', 160, 150, (w, h, c, d) => [L_([[0, 0], [w, 0], [w, 60], [60, 60], [60, h], [0, h]], c, true)]),
+  peca('Escritório', 'Cadeira de escritório', 60, 60, (w, h, c, d) => [E_(30, 33, 25, 23, c), L_([[8, 12, 30, -4], [52, 12]], { ...d, esp: 3 })]),
+  peca('Escritório', 'Cadeira', 45, 50, (w, h, c, d) => [R_(0, 7, 45, 43, c, 5), R_(2, 0, 41, 7, d, 2)]),
+  peca('Escritório', 'Gaveteiro', 45, 55, (w, h, c, d) => [R_(0, 0, w, h, c, 1), L_([[4, h - 5], [w - 4, h - 5]], d)]),
+  // Portas e janelas (desenhadas pelo app, ajustam na parede)
+  ...[60, 70, 80, 90].map(w => param(`Porta ${w}`, { tipo: 'porta', modelo: 'giro', w, h: 15 })),
+  param('Porta de 2 folhas 120', { tipo: 'porta', modelo: 'dupla', w: 120, h: 15 }),
+  param('Porta de 2 folhas 160', { tipo: 'porta', modelo: 'dupla', w: 160, h: 15 }),
+  param('Porta de correr 120', { tipo: 'porta', modelo: 'correr', w: 120, h: 15 }),
+  param('Porta de correr 160', { tipo: 'porta', modelo: 'correr', w: 160, h: 15 }),
+  ...[60, 100, 120, 150, 200].map(w => param(`Janela ${w}`, { tipo: 'janela', w, h: 15 }))
+];
+const todasPecas = () => [...BIBLIOTECA, ...S.bibUser];
+function instanciar(item, cx, cy) {
+  if (item.param) {
+    const p = item.param;
+    return { id: uid(), tipo: p.tipo, nome: '', modelo: p.modelo || null, x: f2(cx - p.w / 2), y: f2(cy - p.h / 2), w: p.w, h: p.h, rot: 0, espX: false, inv: false, estilo: { ...estiloCat('porta'), linha: 'solida', esp: 1.5 }, med: false };
+  }
+  return { id: uid(), tipo: 'bloco', nome: item.nome, libId: item.id, x: f2(cx - item.w0 / 2), y: f2(cy - item.h0 / 2), w: item.w0, h: item.h0, w0: item.w0, h0: item.h0, rot: 0, espX: false,
+    itens: clone(item.itens).map(o => ({ ...o, id: uid() })), estilo: clone((item.itens[0] && item.itens[0].estilo) || estiloCat('movel')), med: false, tamNome: 11 };
+}
+const norm = t => String(t || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+function miniSVG(lista, W, H, pad = 12) {
+  if (!lista.length) return `<svg viewBox="0 0 ${W} ${H}"><rect width="${W}" height="${H}" fill="#fff"/></svg>`;
+  const guarda = S.doc, fundo = COR_FUNDO; S.doc = { objs: lista, vista: { s: 1, ox: 0, oy: 0 } }; COR_FUNDO = '#FFFFFF';
+  const b = limitesDe(lista), s = Math.min((W - pad * 2) / Math.max(b.x1 - b.x0, 20), (H - pad * 2) / Math.max(b.y1 - b.y0, 20));
+  const ox = W / 2 - (b.x0 + b.x1) / 2 * s, oy = H / 2 - (b.y0 + b.y1) / 2 * s;
+  S.doc.vista = { s, ox, oy };
+  let g = svgLista(lista, s);
+  g = g.replace(/<text[\s\S]*?<\/text>/g, '');
+  S.doc = guarda; COR_FUNDO = fundo;
+  return `<svg viewBox="0 0 ${W} ${H}" font-family="Archivo, system-ui, sans-serif"><rect width="${W}" height="${H}" fill="#fff"/><g transform="matrix(${s} 0 0 ${s} ${ox} ${oy})">${g}</g></svg>`;
+}
+const _thumbs = new Map();
+function thumbPeca(item) {
+  const k = item.id + ':' + (item.atualizadoEm || 0);
+  if (!_thumbs.has(k)) _thumbs.set(k, miniSVG([instanciar(item, item.w0 / 2, item.h0 / 2)], 160, 110, 10));
+  return _thumbs.get(k);
+}
+function abrirGaleria() {
+  if (S.poli) finalizarPoli();
+  S.galeria = !S.galeria; montarGaleria();
+}
+function montarGaleria() {
+  const el = $('#gaveta'); if (!el) return;
+  el.style.display = S.galeria ? '' : 'none';
+  if (!S.galeria) return;
+  el.innerHTML = '';
+  const busca = norm(S.galBusca);
+  const lista = todasPecas().filter(i => busca ? norm(i.nome).includes(busca) || norm(i.cat).includes(busca) : i.cat === S.galCat);
+  const grade = h('div', { class: 'gal-grid' }, lista.length ? lista.map(item => h('div', { class: 'gal-item' },
+    h('button', { class: 'gal-th', title: 'Colocar ' + item.nome, 'aria-label': 'Colocar ' + item.nome, html: thumbPeca(item), onclick: () => comecarColocar(item) }),
+    h('div', { class: 'gal-info' },
+      h('b', {}, item.nome), h('small', {}, `${fmt(item.w0)} × ${fmt(item.h0)} ${cfg.unidade}`),
+      !item.param ? h('div', { class: 'row', style: 'gap:4px;margin-top:4px' },
+        h('button', { class: 'btn sm lite', style: 'min-height:32px;padding:0 8px;font-size:13px', onclick: () => abrirEstudio(item) }, item.fixo ? 'Copiar e editar' : 'Editar'),
+        !item.fixo ? h('button', { class: 'btn sm perigo', style: 'min-height:32px;padding:0 8px;font-size:13px', onclick: () => excluirPeca(item) }, 'Excluir') : null) : null)))
+    : h('p', { class: 'hint', style: 'grid-column:1/-1' }, S.galCat === 'Minhas peças' && !busca ? 'Nenhuma peça sua ainda. Desenhe no estúdio ou selecione objetos no desenho e toque em "Salvar peça".' : 'Nada encontrado.'));
+  ap(el,
+    h('div', { class: 'gal-topo' },
+      h('div', { class: 'row' }, h('h2', { style: 'font-size:22px;font-weight:800;font-stretch:85%' }, 'Biblioteca'), h('span', { class: 'sp' }),
+        h('button', { class: 'btn sm lite', onclick: () => { S.galeria = false; montarGaleria(); } }, 'Fechar')),
+      h('input', { class: 'i', placeholder: 'Buscar peça (ex.: geladeira, cama)', value: S.galBusca || '', 'aria-label': 'Buscar peça', oninput: ev => { S.galBusca = ev.target.value; const pos = ev.target.selectionStart; montarGaleria(); const i = $('#gaveta input'); i.focus(); i.setSelectionRange(pos, pos); } }),
+      !busca ? h('div', { class: 'cats', style: 'margin-top:8px' }, BIB_CATS.map(c => h('button', { class: 'cat' + (S.galCat === c ? ' on' : ''), style: 'padding:0 10px', onclick: () => { S.galCat = c; montarGaleria(); } }, c))) : null,
+      h('p', { class: 'hint' }, 'Toque numa peça e depois no desenho. Perto de uma parede, ela encosta e gira sozinha. Portas e janelas entram na parede.')),
+    grade,
+    h('div', { class: 'gal-rodape' },
+      h('button', { class: 'btn am sm', onclick: () => abrirEstudio(null) }, 'Criar peça no estúdio'),
+      S.sel.length ? h('button', { class: 'btn sm lite', onclick: salvarSelComoPeca }, 'Salvar seleção como peça') : null));
+}
+function comecarColocar(item) {
+  S.galeria = false; S.galBusca = ''; if (item.cat) S.galCat = item.cat; montarGaleria();
+  if (S.poli) finalizarPoli();
+  S.sel = []; S.colocar = { item, rot: 0, obj: null };
+  barraPoli(); painel(); desenhar(); atualizaDica();
+}
+function posFantasma(p) {
+  const C = S.colocar; if (!C) return;
+  const w = S2W(p), q = cfg.ima ? snapGrade(w) : w;
+  const o = instanciar(C.item, q.x, q.y); o.rot = C.rot;
+  C.enc = encostar(o); C.obj = o;
+}
+function colocarPeca() {
+  const C = S.colocar; if (!C || !C.obj) return;
+  const o = C.obj; objs().push(o); S.colocar = null;
+  S.sel = [o.id]; S.ferr = 'sel';
+  barraPoli(); mudou(); ferramentas(); desenhar(); atualizaDica();
+  if (C.enc && !C.enc.cabe) toast(`Atenção: ${o.nome || 'a peça'} (${fmt(o.w, true)}) é maior que a parede livre (${fmt(C.enc.livre, true)}).`);
+  else toast(`${o.nome || (o.tipo === 'janela' ? 'Janela' : 'Porta')} colocada. Ajuste no painel ou arraste.`);
+}
+function cancelarColocar() { S.colocar = null; barraPoli(); desenhar(); atualizaDica(); }
+async function excluirPeca(item) {
+  if (!confirm(`Excluir "${item.nome}" da biblioteca? Os desenhos que já usam a peça não mudam.`)) return;
+  await DB.del('biblioteca', item.id); S.bibUser = await DB.all('biblioteca'); montarGaleria(); toast('Peça excluída.');
+}
+function salvarSelComoPeca() {
+  const pc = pecaDaSelecao(); if (!pc) return;
+  S.galeria = false; montarGaleria();
+  dlgSalvarPeca({ ...pc, cat: 'Minhas peças', libId: null }, {});
+}
+function dlgSalvarPeca(pc, op) {
+  const dlg = $('#dlg'); dlg.innerHTML = '';
+  const t = { nome: pc.nome || '', cat: BIB_CATS.includes(pc.cat) && pc.cat !== 'Portas e janelas' ? pc.cat : 'Minhas peças' };
+  const guarda = S.doc; const tmp = { id: 'tmp', itens: pc.itens, w0: pc.w0, h0: pc.h0, nome: '' };
+  dlg.append(h('div', { class: 'dlg' }, h('h2', {}, pc.libId ? 'Atualizar peça na biblioteca' : 'Salvar na biblioteca'),
+    h('div', { style: 'border:1.5px solid #C9D2C7;border-radius:10px;overflow:hidden;margin-bottom:10px', html: miniSVG([instanciar(tmp, pc.w0 / 2, pc.h0 / 2)], 460, 200, 16) }),
+    h('p', { class: 'hint', style: 'margin:0 0 12px' }, `Tamanho: ${fmt(pc.w0)} × ${fmt(pc.h0)} ${cfg.unidade}. A parte de cima do desenho é o fundo da peça, o lado que encosta na parede.`),
+    h('div', { class: 'duo' },
+      h('label', { class: 'f' }, h('span', {}, 'Nome da peça'), h('input', { class: 'i', id: 'pcNome', value: t.nome, placeholder: 'Ex.: Balcão 3 portas', oninput: e => t.nome = e.target.value })),
+      h('label', { class: 'f' }, h('span', {}, 'Categoria'), h('select', { class: 'i', onchange: e => t.cat = e.target.value },
+        BIB_CATS.filter(c => c !== 'Portas e janelas').map(c => h('option', { value: c, selected: t.cat === c }, c))))),
+    h('div', { class: 'row', style: 'margin-top:8px' },
+      !op.doEstudio ? h('button', { class: 'btn lite', onclick: () => { dlg.close(); abrirEstudio({ id: null, itens: pc.itens, nome: t.nome || 'Nova peça', cat: t.cat, fixo: false, w0: pc.w0, h0: pc.h0 }); } }, 'Ajustar no estúdio') : null,
+      h('span', { class: 'sp' }),
+      h('button', { class: 'btn lite', onclick: () => dlg.close() }, 'Cancelar'),
+      h('button', { class: 'btn pri', onclick: async () => {
+        if (!t.nome.trim()) { toast('Dê um nome para a peça.'); $('#pcNome').focus(); return; }
+        const item = { id: pc.libId || 'u:' + uid(), nome: t.nome.trim(), cat: t.cat, w0: pc.w0, h0: pc.h0, itens: pc.itens, meu: true, atualizadoEm: Date.now() };
+        await DB.put('biblioteca', item); S.bibUser = await DB.all('biblioteca');
+        dlg.close(); toast(`"${item.nome}" salva na biblioteca, em ${item.cat}.`);
+        if (op.doEstudio) fecharEstudio(true);
+      } }, 'Salvar'))));
+  S.doc = guarda;
+  dlg.showModal(); setTimeout(() => $('#pcNome')?.focus(), 60);
+}
+
+/* ---------- estúdio de peças ---------- */
+function abrirEstudio(item) {
+  const volta = S.estudio ? S.estudio.volta : (S.tela === 'editor' && S.doc ? S.doc : null);
+  if (volta && !S.estudio) { clearTimeout(_tS); DB.put('desenhos', volta).catch(() => {}); }
+  S.galeria = false; S.colocar = null;
+  const itens = item ? clone(item.itens).map(o => ({ ...o, id: uid() })) : [];
+  S.estudio = { volta, libId: item && !item.fixo && item.id ? item.id : null, nome: item ? (item.fixo ? item.nome + ' (minha)' : item.nome) : 'Nova peça', cat: item && !item.fixo && item.cat ? item.cat : 'Minhas peças' };
+  abrir({ id: '__estudio', nome: S.estudio.nome, objs: itens, vista: null });
+  S.ferr = itens.length ? 'sel' : 'ret';
+}
+function salvarEstudio() {
+  if (!objs().length) { toast('Desenhe a peça antes de salvar.'); return; }
+  const b = limitesDe(objs());
+  const pc = { itens: objs().map(o => { const c = clone(o); mover(c, -b.x0, -b.y0); return c; }), w0: f2(b.x1 - b.x0), h0: f2(b.y1 - b.y0), nome: S.estudio.nome, cat: S.estudio.cat, libId: S.estudio.libId };
+  dlgSalvarPeca(pc, { doEstudio: true });
+}
+function fecharEstudio(salvo) {
+  if (!salvo && S.undo.length && !confirm('Sair do estúdio sem salvar a peça?')) return;
+  const volta = S.estudio && S.estudio.volta; S.estudio = null;
+  if (volta) { abrir(volta); S.galeria = true; S.galCat = 'Minhas peças'; setTimeout(montarGaleria, 60); }
+  else irLista();
+}
+
+/* ---------- mais formas ---------- */
+const pn = arr => arr.map(([x, y]) => ({ x, y, c: null }));
+function arcoN(cx, cy, rx, ry, a0, a1, n) {
+  const r = [], d = (a1 - a0) / n, f = 1 / Math.cos(d / 2 * Math.PI / 180);
+  for (let k = 0; k <= n; k++) {
+    const t = (a0 + d * k) * Math.PI / 180, p = { x: cx + rx * Math.cos(t), y: cy + ry * Math.sin(t), c: null };
+    if (k < n) { const tm = (a0 + d * (k + 0.5)) * Math.PI / 180; p.c = { x: cx + rx * f * Math.cos(tm), y: cy + ry * f * Math.sin(tm) }; }
+    r.push(p);
+  }
+  return r;
+}
+const regular = n => pn(Array.from({ length: n }, (_, k) => { const a = (-90 + k * 360 / n) * Math.PI / 180; return [0.5 + 0.5 * Math.cos(a), 0.5 + 0.5 * Math.sin(a)]; }));
+const estrela = (n, r) => pn(Array.from({ length: n * 2 }, (_, k) => { const a = (-90 + k * 180 / n) * Math.PI / 180, rr = k % 2 ? r * 0.5 : 0.5; return [0.5 + rr * Math.cos(a), 0.5 + rr * Math.sin(a)]; }));
+const FORMAS = [
+  ['triangulo', 'Triângulo', () => ({ pts: pn([[.5, 0], [1, 1], [0, 1]]), fechado: true })],
+  ['triret', 'Triângulo retângulo', () => ({ pts: pn([[0, 0], [1, 1], [0, 1]]), fechado: true })],
+  ['losango', 'Losango', () => ({ pts: pn([[.5, 0], [1, .5], [.5, 1], [0, .5]]), fechado: true })],
+  ['trapezio', 'Trapézio', () => ({ pts: pn([[.22, 0], [.78, 0], [1, 1], [0, 1]]), fechado: true })],
+  ['pentagono', 'Pentágono', () => ({ pts: regular(5), fechado: true })],
+  ['hexagono', 'Hexágono', () => ({ pts: regular(6), fechado: true })],
+  ['octogono', 'Octógono', () => ({ pts: regular(8), fechado: true })],
+  ['estrela', 'Estrela', () => ({ pts: estrela(5, 0.42), fechado: true })],
+  ['seta', 'Seta', () => ({ pts: pn([[0, .35], [.6, .35], [.6, .06], [1, .5], [.6, .94], [.6, .65], [0, .65]]), fechado: true })],
+  ['cruz', 'Cruz', () => ({ pts: pn([[.33, 0], [.67, 0], [.67, .33], [1, .33], [1, .67], [.67, .67], [.67, 1], [.33, 1], [.33, .67], [0, .67], [0, .33], [.33, .33]]), fechado: true })],
+  ['L', 'Forma em L', () => ({ pts: pn([[0, 0], [.4, 0], [.4, .6], [1, .6], [1, 1], [0, 1]]), fechado: true })],
+  ['U', 'Forma em U', () => ({ pts: pn([[0, 0], [.3, 0], [.3, .65], [.7, .65], [.7, 0], [1, 0], [1, 1], [0, 1]]), fechado: true })],
+  ['semicirculo', 'Meio círculo', () => ({ pts: [{ x: 0, y: 1, c: null }, ...arcoN(.5, 1, .5, 1, 0, -180, 4).slice(0, -1)], fechado: true })],
+  ['setor', 'Quarto de círculo', () => ({ pts: [{ x: 0, y: 1, c: null }, ...arcoN(0, 1, 1, 1, 0, -90, 2)], fechado: true })],
+  ['arco', 'Arco', () => ({ pts: arcoN(0, 1, 1, 1, 0, -90, 2), fechado: false })]
+];
+function gerarForma(k) {
+  const f = (FORMAS.find(x => x[0] === k) || FORMAS[0])[2]();
+  const xs = f.pts.map(p => p.x), ys = f.pts.map(p => p.y);
+  const x0 = Math.min(...xs), y0 = Math.min(...ys), sx = (Math.max(...xs) - x0) || 1, sy = (Math.max(...ys) - y0) || 1;
+  const N = p => ({ x: (p.x - x0) / sx, y: (p.y - y0) / sy });
+  return { fechado: f.fechado, pts: f.pts.map(p => ({ ...N(p), c: p.c ? N(p.c) : null })) };
+}
+function construirForma(k, x, y, w, hh) {
+  const f = gerarForma(k), M = p => ({ x: f2(x + p.x * w), y: f2(y + p.y * hh) });
+  const nome = (FORMAS.find(z => z[0] === k) || FORMAS[0])[1];
+  return { id: uid(), tipo: 'linha', forma: nome, nome: '', estilo: clone(S.padrao.formas), med: false, fechado: f.fechado, pts: f.pts.map(p => ({ ...M(p), c: p.c ? M(p.c) : null })) };
+}
+function iconeForma(k) {
+  const f = gerarForma(k), M = p => ({ x: 4 + p.x * 20, y: 4 + p.y * 20 });
+  const d = caminho({ fechado: f.fechado, pts: f.pts.map(p => ({ ...M(p), c: p.c ? M(p.c) : null })) });
+  return `<svg width="28" height="28" viewBox="0 0 28 28"><path d="${d}" fill="${f.fechado ? '#E9C99A' : 'none'}" stroke="#262A28" stroke-width="1.8" stroke-linejoin="round"/></svg>`;
+}
+function montarFormas() {
+  const el = $('#formas'); if (!el) return;
+  el.style.display = S.ferr === 'formas' && !S.colocar ? '' : 'none';
+  if (S.ferr !== 'formas') return;
+  el.innerHTML = '';
+  for (const [k, nome] of FORMAS) el.append(h('button', { class: S.forma === k ? 'on' : '', title: nome, 'aria-label': nome, 'aria-pressed': S.forma === k ? 'true' : 'false', html: iconeForma(k), onclick: () => { S.forma = k; montarFormas(); } }));
+}
+
+/* ---------- segurar a caneta: o traço vira forma perfeita ---------- */
+function reconhecer(pts) {
+  if (pts.length < 4) return null;
+  const s = v().s, a = pts[0], z = pts[pts.length - 1];
+  let L = 0; for (let i = 1; i < pts.length; i++) L += dist(pts[i - 1], pts[i]);
+  if (L * s < 30) return null;
+  const fechado = dist(a, z) < Math.max(L * 0.12, 20 / s);
+  if (!fechado) {
+    const corda = dist(a, z), dev = Math.max(...pts.map(p => distSeg(p, a, z)));
+    const base = { id: uid(), tipo: 'linha', nome: '', estilo: clone(S.padrao.linha), fechado: false };
+    if (dev < corda * 0.07) {
+      let b = z;
+      if (cfg.orto) { let ang = Math.atan2(z.y - a.y, z.x - a.x); ang = Math.round(ang / (Math.PI / 4)) * (Math.PI / 4); b = { x: a.x + Math.cos(ang) * corda, y: a.y + Math.sin(ang) * corda }; }
+      return { ...base, med: true, pts: [{ x: f2(a.x), y: f2(a.y), c: null }, { x: f2(b.x), y: f2(b.y), c: null }] };
+    }
+    let acc = 0, m = pts[0]; for (let i = 1; i < pts.length; i++) { acc += dist(pts[i - 1], pts[i]); if (acc >= L / 2) { m = pts[i]; break; } }
+    return { ...base, med: false, pts: [{ x: f2(a.x), y: f2(a.y), c: { x: f2(2 * m.x - (a.x + z.x) / 2), y: f2(2 * m.y - (a.y + z.y) / 2) } }, { x: f2(z.x), y: f2(z.y), c: null }] };
+  }
+  const xs = pts.map(p => p.x), ys = pts.map(p => p.y);
+  const x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys), bw = x1 - x0, bh = y1 - y0;
+  if (bw * s < 16 || bh * s < 16) return null;
+  const cx = (x0 + x1) / 2, cy = (y0 + y1) / 2, diag = Math.hypot(bw, bh);
+  const rs = pts.map(p => Math.hypot((p.x - cx) / (bw / 2), (p.y - cy) / (bh / 2)));
+  const med = rs.reduce((q, r) => q + r, 0) / rs.length, desv = Math.sqrt(rs.reduce((q, r) => q + (r - med) ** 2, 0) / rs.length);
+  // começa no ponto mais longe do centro (quase sempre um canto) e fecha a volta
+  let ini = 0, dm = -1; pts.forEach((p, i) => { const d = Math.hypot(p.x - cx, p.y - cy); if (d > dm) { dm = d; ini = i; } });
+  const volta = [...pts.slice(ini), ...pts.slice(0, ini), pts[ini]];
+  // volta fechada: divide no ponto mais distante do início para a simplificação funcionar
+  let mi = 0, md = -1; volta.forEach((p, i) => { const d = dist(p, volta[0]); if (d > md) { md = d; mi = i; } });
+  const simp = rdp(volta.slice(0, mi + 1), diag * 0.07).slice(0, -1).concat(rdp(volta.slice(mi), diag * 0.07)).slice(0, -1);
+  const n = simp.length;
+  const est = tipo => clone(S.padrao[tipo]);
+  const elipse = () => { let w = bw, hh = bh; if (Math.abs(bw - bh) / Math.max(bw, bh) < 0.12) w = hh = (bw + bh) / 2; return { id: uid(), tipo: 'elipse', nome: '', estilo: est('elipse'), med: false, x: f2(cx - w / 2), y: f2(cy - hh / 2), w: f2(w), h: f2(hh), rot: 0 }; };
+  if (desv < 0.09 && n > 4) return elipse();
+  if (n === 3) return { id: uid(), tipo: 'linha', forma: 'Triângulo', nome: '', estilo: est('formas'), med: false, fechado: true, pts: simp.map(p => ({ x: f2(p.x), y: f2(p.y), c: null })) };
+  if (n === 4) {
+    const ang = Math.atan2(simp[1].y - simp[0].y, simp[1].x - simp[0].x) * 180 / Math.PI;
+    let r = ((ang % 90) + 90) % 90; if (r > 45) r -= 90;
+    if (Math.abs(r) < 12 || cfg.orto) return { id: uid(), tipo: 'ret', nome: '', estilo: est('ret'), med: true, x: snapV(x0), y: snapV(y0), w: Math.max(1, snapV(bw)), h: Math.max(1, snapV(bh)), rot: 0 };
+    const c = { x: cx, y: cy }, un = simp.map(p => rot(p, -r, c)), ux = un.map(p => p.x), uy = un.map(p => p.y);
+    const w = Math.max(...ux) - Math.min(...ux), hh = Math.max(...uy) - Math.min(...uy);
+    return { id: uid(), tipo: 'ret', nome: '', estilo: est('ret'), med: true, x: f2(cx - w / 2), y: f2(cy - hh / 2), w: f2(w), h: f2(hh), rot: ((Math.round(r) % 360) + 360) % 360 };
+  }
+  if (desv < 0.15) return elipse();
+  return { id: uid(), tipo: 'linha', forma: 'Polígono', nome: '', estilo: est('formas'), med: false, fechado: true, pts: simp.map(p => ({ x: f2(p.x), y: f2(p.y), c: null })) };
+}
+
+/* ---------- pontas de linha (setas) ---------- */
+function svgPontas(o, e, w, s, tr) {
+  const t = e.pontas; if (!t || t === 'nenhuma' || o.fechado || !o.pts || o.pts.length < 2) return '';
+  const P_ = o.pts, n = P_.length;
+  const ponta = (fim, antes) => {
+    if (t === 'bola') return `<circle cx="${fim.x}" cy="${fim.y}" r="${Math.max(3.5 / s, w * 1.7)}" fill="${tr}" pointer-events="none"/>`;
+    const dx = fim.x - antes.x, dy = fim.y - antes.y, L = Math.hypot(dx, dy) || 1, ux = dx / L, uy = dy / L, k = Math.max(11 / s, w * 4.5), b = k * 0.42;
+    return `<path d="M${fim.x + ux * w} ${fim.y + uy * w}L${fim.x - ux * k - uy * b} ${fim.y - uy * k + ux * b}L${fim.x - ux * k + uy * b} ${fim.y - uy * k - ux * b}Z" fill="${tr}" pointer-events="none"/>`;
+  };
+  let g = ponta(P_[n - 1], P_[n - 2].c || P_[n - 2]);
+  if (t === 'ambas' || t === 'bola') g += ponta(P_[0], P_[0].c || P_[1]);
+  return g;
+}
+
+/* ---------- barra rápida perto da seleção ---------- */
+function montarRapida() {
+  const el = $('#rapida'); if (!el) return;
+  el.innerHTML = '';
+  const sel = selObjs(); if (!sel.length) { el.style.display = 'none'; return; }
+  const b = (rot_, icone, fn, cls = '') => h('button', { class: cls, title: rot_, 'aria-label': rot_, onclick: fn, html: ico(icone, 22) + `<span>${rot_}</span>` });
+  const um = sel.length === 1 ? sel[0] : null;
+  ap(el,
+    b('Duplicar', '<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 00-1-1H5a1 1 0 00-1 1v10a1 1 0 001 1h3"/>', duplicarSel),
+    b('Girar', '<path d="M20 12a8 8 0 11-2.34-5.66"/><path d="M20 4v5h-5"/>', girarSel),
+    b('Espelhar', '<path d="M12 3v18"/><path d="M8 7L3 12l5 5z"/><path d="M16 7l5 5-5 5z"/>', espelharSel),
+    sel.length > 1 ? b('Agrupar', '<rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/><path d="M11 7h4a2 2 0 012 2v4"/>', agruparSel) : null,
+    um && um.tipo === 'bloco' ? b('Desagrupar', '<rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/>', () => desagrupar(um)) : null,
+    !S.estudio ? b('Salvar peça', '<path d="M5 3h11l3 3v15H5z"/><path d="M8 3v6h8V3M8 21v-7h8v7"/>', salvarSelComoPeca) : null,
+    b('Excluir', '<path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/>', excluirSel, 'perigo'));
+}
+function posicionarRapida() {
+  const el = $('#rapida'); if (!el || !TELA) return;
+  const sel = selObjs();
+  if (!sel.length || P.acao || S.colocar || S.poli || !el.childElementCount) { el.style.display = 'none'; return; }
+  el.style.display = '';
+  const b = limitesDe(sel), a = W2S({ x: b.x0, y: b.y0 }), z = W2S({ x: b.x1, y: b.y1 });
+  const W = el.offsetWidth, H = el.offsetHeight;
+  let y = a.y - H - 62;
+  if (y < 64) y = z.y + 30;
+  if (y + H > TELA.H - 70) y = clamp(a.y - H - 62, 64, TELA.H - H - 70);
+  const x = clamp((a.x + z.x) / 2 - W / 2, 76, Math.max(76, TELA.W - W - 10));
+  el.style.left = x + 'px'; el.style.top = y + 'px';
+}
+
 /* ---------- diálogos ---------- */
 function pedirTexto(tit, val, ok) {
   const dlg = $('#dlg'); dlg.innerHTML = '';
@@ -1179,10 +1848,10 @@ function dlgExportar() {
 }
 // s = px por cm da imagem; k = quanto 1 px de traço/texto vale na imagem
 function svgExport(s, k, b, W, H) {
-  const guarda = S.doc.vista, se = s / k;
-  S.doc.vista = { s: se, ox: 0, oy: 0 };
-  let g = ''; for (const o of objs()) g += svgObj(o, se);
-  S.doc.vista = guarda;
+  const guarda = S.doc.vista, se = s / k, fundo = COR_FUNDO;
+  S.doc.vista = { s: se, ox: 0, oy: 0 }; COR_FUNDO = '#FFFFFF';
+  const g = svgLista(objs(), se);
+  S.doc.vista = guarda; COR_FUNDO = fundo;
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" font-family="Archivo, system-ui, sans-serif"><rect width="${W}" height="${H}" fill="#fff"/><g transform="matrix(${s} 0 0 ${s} ${-b.x0 * s} ${-b.y0 * s})">${g}</g></svg>`;
 }
 async function exportarPNG() {
@@ -1258,7 +1927,7 @@ document.addEventListener('keydown', e => {
   else if ((e.ctrlKey || e.metaKey) && k === 'y') { e.preventDefault(); refazer(); }
   else if ((e.ctrlKey || e.metaKey) && k === 'd') { e.preventDefault(); duplicarSel(); }
   else if (k === 'delete' || k === 'backspace') { if (S.sel.length) { e.preventDefault(); excluirSel(); } }
-  else if (k === 'escape') { if (S.poli) cancelarPoli(); else { S.sel = []; desenhar(); painel(); } }
+  else if (k === 'escape') { if (S.colocar) cancelarColocar(); else if (S.galeria) { S.galeria = false; montarGaleria(); ferramentas(); } else if (S.poli) cancelarPoli(); else { S.sel = []; desenhar(); painel(); } }
   else if (k === 'enter' && S.poli) finalizarPoli();
 });
 
@@ -1266,6 +1935,7 @@ document.addEventListener('keydown', e => {
 (async function iniciar() {
   await DB.abrir();
   try { const c = await DB.get('config', 'cfg'); if (c) Object.assign(cfg, c.v); } catch (e) {}
+  try { S.bibUser = await DB.all('biblioteca'); } catch (e) { S.bibUser = []; }
   if (DB.ok && navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
   if ('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js').catch(() => {});
   if (document.fonts) document.fonts.ready.then(() => desenhar());

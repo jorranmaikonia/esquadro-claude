@@ -14,13 +14,15 @@ App para medir ambientes na casa do cliente com o tablet e a S Pen. Funciona sem
 3. Abra pelo ícone. A partir daí funciona offline.
 
 ## Uso rápido
-- **Caneta desenha, dedo move a tela, dois dedos dão zoom.** Segurando o botão da S Pen, a caneta também move a tela.
-- **Parede:** toque ponto a ponto (ou arraste cada trecho). Toque no primeiro ponto (amarelo) para fechar o cômodo e dê o nome no painel. A área aparece sozinha.
-- **Comprimento exato:** enquanto desenha, digite o comprimento na barra de baixo e toque em Aplicar. Depois, dá para mudar cada trecho no painel.
-- **Móveis:** Retângulo e Elipse. Arraste de um canto ao outro, ou toque uma vez para criar uma peça de 60 × 60 cm. Largura, profundidade e ângulo podem ser digitados no painel.
-- **Editar:** com Selecionar, os quadradinhos mudam o tamanho, a bolinha amarela gira e a bolinha preta no meio de um trecho faz curva (um toque nela cria um ponto). Toque duas vezes num ponto para apagá-lo.
-- **Cores por categoria:** Parede, Móvel, Porta/janela, Eletro, Elétrica, Hidráulica, Observação e Medida. Além disso, qualquer cor, preenchimento, transparência, espessura e tipo de linha.
-- **Grade, Ímã e 90°** ficam na barra de cima.
+- **Caneta desenha. Com o botão da S Pen apertado, a caneta seleciona e move** sem trocar de ferramenta.
+- **Um dedo move a tela, dois dedos dão zoom.** Um toque de dedo num objeto seleciona. **Dois dedos tocando = desfazer; três = refazer.**
+- **Toque de novo na ferramenta ativa para fixá-la** (ela não volta para Selecionar depois de cada desenho).
+- **Traço livre:** segure a caneta parada no fim do traço e ele vira reta, retângulo, círculo ou triângulo.
+- **Mais formas:** triângulos, losango, trapézio, polígonos, estrela, seta, cruz, L, U, meio círculo, quarto de círculo e arco. Todas editáveis ponto a ponto.
+- **Parede:** toque ponto a ponto e toque no primeiro ponto para fechar o cômodo. Nome e área aparecem no centro.
+- **Biblioteca (último botão da esquerda):** móveis, eletros, portas e janelas em tamanho real, por ambiente, com busca. Toque na peça e no desenho: perto de uma parede ela encosta e gira sozinha; porta e janela entram na parede e pegam a espessura dela.
+- **Barra rápida** sobre a seleção: duplicar, girar, espelhar, agrupar/desagrupar, salvar como peça e excluir.
+- **Estúdio de peças:** desenhe suas peças em tamanho real (a parte de cima é o fundo, o lado da parede) e salve em "Minhas peças". Também dá para selecionar objetos de um projeto e salvar como peça.
 - **Exportar:** imagem PNG (para o WhatsApp) ou PDF em escala (1:20, 1:25, 1:50...).
 
 ## Importante: backup

@@ -1,5 +1,5 @@
 // Esquadro — funciona offline depois da primeira abertura
-const CACHE = 'esquadro-v2.0.0';
+const CACHE = 'esquadro-v2.1.0';
 const APP = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png'];
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(APP)).then(() => self.skipWaiting()));
