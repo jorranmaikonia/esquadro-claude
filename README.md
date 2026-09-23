@@ -21,9 +21,11 @@ App para medir ambientes na casa do cliente com o tablet e a S Pen. Funciona sem
 - **Mais formas:** triângulos, losango, trapézio, polígonos, estrela, seta, cruz, L, U, meio círculo, quarto de círculo e arco. Todas editáveis ponto a ponto.
 - **Parede:** toque ponto a ponto e toque no primeiro ponto para fechar o cômodo. Nome e área aparecem no centro.
 - **Biblioteca (último botão da esquerda):** móveis, eletros, portas e janelas em tamanho real, por ambiente, com busca. Toque na peça e no desenho: perto de uma parede ela encosta e gira sozinha; porta e janela entram na parede e pegam a espessura dela.
+- **Vistas de parede (elevação):** selecione uma parede e toque em "Ver de frente", ou use o seletor de folhas no topo ("+ Nova vista de parede"). As peças encostadas na parede na planta aparecem de frente sozinhas, na altura certa, com cotas em cadeia embaixo e do lado. Aéreos, tomadas e nichos você coloca direto na vista.
+- **Biblioteca com duas vistas:** cada peça tem desenho de cima e de frente (cerca de 90 peças: cozinha, módulos planejados, dormitório, sala, banheiro, lavanderia, escritório, portas e janelas, pontos técnicos).
 - **Barra rápida** sobre a seleção: duplicar, girar, espelhar, agrupar/desagrupar, salvar como peça e excluir.
-- **Estúdio de peças:** desenhe suas peças em tamanho real (a parte de cima é o fundo, o lado da parede) e salve em "Minhas peças". Também dá para selecionar objetos de um projeto e salvar como peça.
-- **Exportar:** imagem PNG (para o WhatsApp) ou PDF em escala (1:20, 1:25, 1:50...).
+- **Estúdio de peças:** desenhe suas peças em tamanho real, de cima e de frente (duas folhas), e salve em "Minhas peças". Também dá para selecionar objetos de um projeto e salvar como peça.
+- **Exportar:** imagem PNG da folha (para o WhatsApp), PDF em escala da folha ou PDF com todas as folhas (planta e vistas).
 
 ## Importante: backup
 Os desenhos ficam só no tablet. Use **Backup > Exportar todos** de vez em quando e guarde o arquivo no Drive.
